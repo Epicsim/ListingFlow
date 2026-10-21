@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens: warm neutral surfaces, dark readable ink, one restrained
+ * accent. Agent landing pages swap the accent for the agent's brand color
+ * through --brand / --brand-contrast / --brand-text (see lib/color.ts).
+ */
+@theme {
+  --color-canvas: #f7f4ee;
+  --color-surface: #ffffff;
+  --color-sunken: #f1ece4;
+  --color-line: #e4ddd2;
+  --color-line-strong: #cfc5b6;
+  --color-ink: #1c1a17;
+  --color-ink-soft: #45403a;
+  --color-ink-muted: #645d53;
+
+  --color-accent: #1f5f4a;
+  --color-accent-hover: #184c3b;
+  --color-accent-soft: #e3eee8;
+  --color-accent-ink: #154434;
+
+  --color-danger: #a8261b;
+  --color-danger-soft: #fbebe8;
+  --color-warning: #7a4f00;
+  --color-warning-soft: #fbf0d9;
+  --color-info: #1d4b80;
+  --color-info-soft: #e7eef7;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+
+  --shadow-card: 0 1px 2px rgb(28 26 23 / 0.04), 0 1px 1px rgb(28 26 23 / 0.03);
+  --shadow-raised: 0 10px 30px -12px rgb(28 26 23 / 0.18), 0 2px 6px rgb(28 26 23 / 0.06);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  .brand-scope :focus-visible {
+    outline-color: var(--brand-text, var(--color-accent));
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Success confirmations fade after a few seconds so they don't linger next to later actions. */
+@keyframes fade-away {
+  0%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@layer components {
+  .fade-away {
+    animation: fade-away 6s ease-in forwards;
+  }
+
+  /* With reduced motion the global rule would make the message vanish instantly; keep it visible instead. */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-away {
+      animation: none !important;
+    }
+  }
+
+  .input-base {
+    @apply block w-full rounded-lg border border-line-strong bg-surface px-3 py-2.5 text-[15px] text-ink shadow-[inset_0_1px_1px_rgb(28_26_23/0.03)] transition-colors placeholder:text-ink-muted/70 hover:border-ink-muted/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:cursor-not-allowed disabled:bg-sunken aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger/20;
+  }
+
+  .brand-scope .input-base {
+    @apply focus:border-[var(--brand-text)] focus:ring-[color-mix(in_srgb,var(--brand)_25%,transparent)];
+  }
+}
