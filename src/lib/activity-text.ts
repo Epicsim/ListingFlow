@@ -18,6 +18,8 @@ export function describeEvent(event: ActivityEvent, timeZone: string, includeNam
   const who = includeName && event.contact_name ? event.contact_name : "";
   const subject = who || "Homeowner";
   switch (event.type) {
+    case "lead_deleted":
+      return "Lead permanently deleted";
     case "inquiry_submitted": {
       const timeline = TIMELINE_LABELS[str(d.timeline) as Timeline];
       return `${subject} requested an estimate via “${str(d.campaign_name)}”${

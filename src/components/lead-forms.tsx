@@ -1,10 +1,11 @@
 "use client";
 
-import { Mail } from "lucide-react";
+import { Mail, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
   addNoteAction,
   createTaskAction,
+  deleteLeadAction,
   recordAppointmentAction,
   rescheduleAppointmentAction,
   saveFollowUpEmailAction,
@@ -12,7 +13,34 @@ import {
 } from "@/app/(app)/leads/actions";
 import { LEAD_STATUS_LABELS, LEAD_STATUSES, type LeadStatus } from "@/lib/domain";
 import { ActionForm, SubmitButton } from "./ui/action-form";
-import { SelectField, TextArea, TextField } from "./ui/fields";
+import { CheckboxField, SelectField, TextArea, TextField } from "./ui/fields";
+
+export function DeleteLeadForm({ contactId }: { contactId: string }) {
+  return (
+    <details className="p-5">
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-danger [&::-webkit-details-marker]:hidden">
+        <Trash2 aria-hidden className="size-4" /> Delete this lead
+      </summary>
+      <ActionForm action={deleteLeadAction} className="mt-4 space-y-4">
+        <input type="hidden" name="contact_id" value={contactId} />
+        <p className="text-sm text-ink-soft">
+          This permanently deletes the contact details and all their inquiries, consent records, booking-link
+          clicks, consultations, follow-up reminders, notes, activity and stored emails from your outbox.
+          This can&rsquo;t be undone. Emails already sent can&rsquo;t be recalled.
+        </p>
+        <CheckboxField
+          name="confirm_delete"
+          value="delete"
+          required
+          label="I understand this permanently deletes the lead and their history."
+        />
+        <SubmitButton variant="danger" size="sm" pendingLabel="Deleting…">
+          Permanently delete lead
+        </SubmitButton>
+      </ActionForm>
+    </details>
+  );
+}
 
 export function StatusForm({
   contactId,

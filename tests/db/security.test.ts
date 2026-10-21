@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { recordAppointment } from "@/lib/data/appointments";
 import { getCampaign, listCampaignsWithStats, updateCampaign } from "@/lib/data/campaigns";
-import { getLeadDetail, listLeads, updateLeadStatus } from "@/lib/data/leads";
+import { deleteLead, getLeadDetail, listLeads, updateLeadStatus } from "@/lib/data/leads";
 import { getOverviewMetrics } from "@/lib/data/metrics";
 import { getPublicCampaign } from "@/lib/data/public";
 import { createTask } from "@/lib/data/tasks";
@@ -68,6 +68,11 @@ describe("public (anonymous) access", () => {
         ),
       ),
     ).rejects.toThrow(/permission denied/);
+  });
+
+  it("cannot delete a lead", async () => {
+    await expect(asAnon(db, (tx) => deleteLead(tx, agentB, contactB))).rejects.toThrow(/permission denied/);
+    expect(await asAgent(db, agentB, (tx) => getLeadDetail(tx, agentB, contactB))).not.toBeNull();
   });
 
   it("cannot call the submission or booking-click functions (server only)", async () => {
@@ -143,6 +148,21 @@ describe("agent-to-agent isolation", () => {
       tx.query(`update public.contacts set status = 'lost' where id = $1::uuid returning id`, [contactB]),
     );
     expect(raw).toHaveLength(0);
+  });
+
+  it("cannot delete another agent's lead, even with a spoofed agent id or raw SQL", async () => {
+    const before = await asAgent(db, agentB, (tx) => getLeadDetail(tx, agentB, contactB));
+    expect(await asAgent(db, agentA, (tx) => deleteLead(tx, agentA, contactB))).toBe(false);
+    expect(await asAgent(db, agentA, (tx) => deleteLead(tx, agentB, contactB))).toBe(false);
+    const raw = await asAgent(db, agentA, (tx) =>
+      tx.query(`delete from public.contacts where id = $1::uuid returning id`, [contactB]),
+    );
+    expect(raw).toHaveLength(0);
+    expect(await asAgent(db, agentB, (tx) => getLeadDetail(tx, agentB, contactB))).toEqual(before);
+    const events = await asAgent(db, agentA, (tx) =>
+      tx.query(`select id from public.activity_events where type = 'lead_deleted'`),
+    );
+    expect(events).toHaveLength(0);
   });
 
   it("cannot attach records to another agent's contact", async () => {

@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { type ActionState, failure, success } from "@/lib/action-state";
 import { requireAgent } from "@/lib/auth/session";
 import { recordAppointment, rescheduleAppointment, updateAppointmentStatus } from "@/lib/data/appointments";
-import { addNote, deleteNote, getContact, markContacted, updateLeadStatus } from "@/lib/data/leads";
+import { addNote, deleteLead, deleteNote, getContact, markContacted, updateLeadStatus } from "@/lib/data/leads";
 import { createFollowUpEmail } from "@/lib/data/outbox";
 import { createTask, deleteTask, setTaskCompleted } from "@/lib/data/tasks";
 import { asService, asUser } from "@/lib/db";
@@ -32,6 +33,24 @@ function refresh(contactId?: string | null) {
 }
 
 const NOT_FOUND = "This lead could not be found.";
+
+export async function deleteLeadAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireAgent();
+  const id = uuidSchema.safeParse(formData.get("contact_id"));
+  if (!id.success) return failure(NOT_FOUND);
+  if (formData.get("confirm_delete") !== "delete") {
+    return failure("Please confirm the permanent deletion.", {
+      confirm_delete: "Check the box to confirm you want to permanently delete this lead.",
+    });
+  }
+  const deleted = await asUser(profile.id, (tx) => deleteLead(tx, profile.id, id.data));
+  if (!deleted) return failure(NOT_FOUND);
+  refresh(id.data);
+  revalidatePath("/campaigns");
+  revalidatePath("/campaigns/[id]", "page");
+  revalidatePath("/outbox");
+  redirect("/leads?deleted=1");
+}
 
 export async function updateStatusAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireAgent();

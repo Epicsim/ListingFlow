@@ -1,9 +1,9 @@
-import { Search, Users } from "lucide-react";
+import { CheckCircle2, Search, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LeadStatusBadge } from "@/components/status-badges";
 import { ButtonLink } from "@/components/ui/button";
-import { Badge, Card, EmptyState, PageHeader } from "@/components/ui/display";
+import { Badge, Card, EmptyState, Notice, PageHeader } from "@/components/ui/display";
 import { requireAgent } from "@/lib/auth/session";
 import { listCampaignOptions } from "@/lib/data/campaigns";
 import { LEADS_PAGE_SIZE, type LeadFilters, listLeadSources, listLeads } from "@/lib/data/leads";
@@ -66,6 +66,12 @@ export default async function LeadsPage({ searchParams }: PageProps<"/leads">) {
         title="Leads"
         description="Homeowners who asked for an estimate. Repeat requests are grouped under the same person."
       />
+
+      {pick(sp.deleted) === "1" ? (
+        <div role="status" className="mb-5">
+          <Notice tone="accent" icon={<CheckCircle2 />}>Lead deleted.</Notice>
+        </div>
+      ) : null}
 
       <Card className="mb-5">
         <form method="get" className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-[1.4fr_repeat(4,1fr)_auto] lg:items-end">

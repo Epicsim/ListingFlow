@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   AppointmentForm,
+  DeleteLeadForm,
   FollowUpComposer,
   NoteForm,
   RescheduleForm,
@@ -415,6 +416,9 @@ export default async function LeadPage({ params }: PageProps<"/leads/[id]">) {
                 </p>
               )}
             </div>
+          </Card>
+          <Card>
+            <DeleteLeadForm contactId={contact.id} />
           </Card>
         </aside>
       </div>

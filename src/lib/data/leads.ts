@@ -215,6 +215,18 @@ export async function getContact(tx: Tx, agentId: string, contactId: string): Pr
   return rows[0] ?? null;
 }
 
+/** Permanently removes a contact and their history through the database's cascade constraints. */
+export async function deleteLead(tx: Tx, agentId: string, contactId: string): Promise<boolean> {
+  const rows = await tx.query<{ id: string }>(
+    `delete from public.contacts where id = $1::uuid and agent_id = $2::uuid returning id`,
+    [contactId, agentId],
+  );
+  if (!rows.length) return false;
+  // Keep only an anonymous record of the action, with no reference to the deleted lead.
+  await logAgentEvent(tx, agentId, { type: "lead_deleted" });
+  return true;
+}
+
 export async function getLeadDetail(tx: Tx, agentId: string, contactId: string): Promise<LeadDetail | null> {
   const contact = await getContact(tx, agentId, contactId);
   if (!contact) return null;
