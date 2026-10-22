@@ -170,7 +170,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
               ) : (
                 <p className="text-sm text-ink-muted">
                   This page isn&rsquo;t public yet, so its link won&rsquo;t work for visitors. You can still{" "}
-                  <Link href={`/campaign-preview/${campaign.id}`} className="text-accent underline-offset-4 hover:underline">
+                  <Link href={`/campaign-preview/${campaign.id}`} className="text-accent-ink underline-offset-4 hover:underline">
                     preview it
                   </Link>
                   .

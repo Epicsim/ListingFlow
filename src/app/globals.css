@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 /*
- * Design tokens: warm neutral surfaces, dark readable ink, one restrained
- * accent. Agent landing pages swap the accent for the agent's brand color
+ * Shared workspace tokens: cool neutral surfaces and a focused blue accent.
+ * Agent landing pages swap the accent for the agent's brand color
  * through --brand / --brand-contrast / --brand-text (see lib/color.ts).
  */
 @theme {
-  --color-canvas: #f7f4ee;
+  --color-canvas: #f5f7fb;
   --color-surface: #ffffff;
-  --color-sunken: #f1ece4;
-  --color-line: #e4ddd2;
-  --color-line-strong: #cfc5b6;
-  --color-ink: #1c1a17;
-  --color-ink-soft: #45403a;
-  --color-ink-muted: #645d53;
+  --color-sunken: #edf1f7;
+  --color-line: #e3e8f0;
+  --color-line-strong: #8694aa;
+  --color-ink: #172235;
+  --color-ink-soft: #44526a;
+  --color-ink-muted: #606e83;
 
-  --color-accent: #1f5f4a;
-  --color-accent-hover: #184c3b;
-  --color-accent-soft: #e3eee8;
-  --color-accent-ink: #154434;
+  --color-accent: #3568cc;
+  --color-accent-hover: #2957b1;
+  --color-accent-soft: #eaf0fd;
+  --color-accent-ink: #2c58b0;
 
   --color-danger: #a8261b;
   --color-danger-soft: #fbebe8;
@@ -28,15 +28,78 @@
   --color-info-soft: #e7eef7;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  --shadow-card: 0 1px 2px rgb(28 26 23 / 0.04), 0 1px 1px rgb(28 26 23 / 0.03);
-  --shadow-raised: 0 10px 30px -12px rgb(28 26 23 / 0.18), 0 2px 6px rgb(28 26 23 / 0.06);
+  --shadow-card: 0 2px 4px -2px rgb(23 34 53 / 0.04);
+  --shadow-raised: 0 24px 64px -24px rgb(23 34 53 / 0.2), 0 4px 12px rgb(23 34 53 / 0.04);
 }
 
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    color-scheme: light;
+    scroll-padding-top: 140px;
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --color-canvas: #10141e;
+    --color-surface: #181e2b;
+    --color-sunken: #212a3a;
+    --color-line: #2a3446;
+    --color-line-strong: #64738d;
+    --color-ink: #edf2fa;
+    --color-ink-soft: #c0cadd;
+    --color-ink-muted: #a2afc5;
+    --color-accent: #3b70d9;
+    --color-accent-hover: #3264c5;
+    --color-accent-soft: #233353;
+    --color-accent-ink: #b0caff;
+    --color-danger: #ffaaa3;
+    --color-danger-soft: #3c2428;
+    --color-warning: #f1cf8a;
+    --color-warning-soft: #342d21;
+    --color-info: #a9ceff;
+    --color-info-soft: #20314a;
+    --shadow-card: 0 2px 4px rgb(0 0 0 / 0.08);
+    --shadow-raised: 0 24px 64px -24px rgb(0 0 0 / 0.5);
+  }
+
+  /* Public surfaces remain light independently of the saved workspace theme.
+     --brand-text is also calculated for these light seller-page surfaces. */
+  .brand-scope,
+  .light-scope {
+    color-scheme: light;
+    color: var(--color-ink);
+    --color-canvas: #f5f7fb;
+    --color-surface: #fff;
+    --color-sunken: #edf1f7;
+    --color-line: #e3e8f0;
+    --color-line-strong: #8694aa;
+    --color-ink: #172235;
+    --color-ink-soft: #44526a;
+    --color-ink-muted: #606e83;
+    --color-accent: #3568cc;
+    --color-accent-hover: #2957b1;
+    --color-accent-soft: #eaf0fd;
+    --color-accent-ink: #2c58b0;
+    --color-danger: #a8261b;
+    --color-danger-soft: #fbebe8;
+    --color-warning: #7a4f00;
+    --color-warning-soft: #fbf0d9;
+    --color-info: #1d4b80;
+    --color-info-soft: #e7eef7;
+    --shadow-card: 0 2px 4px -2px rgb(23 34 53 / 0.04);
+    --shadow-raised: 0 24px 64px -24px rgb(23 34 53 / 0.2), 0 4px 12px rgb(23 34 53 / 0.04);
+  }
+
+  html:has(.landing-page) {
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
+
+  body:has(.landing-page) {
+    background: #f5f7fb;
   }
 
   body {
@@ -44,6 +107,21 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-feature-settings: "cv11", "ss01";
+    line-height: 1.6;
+  }
+
+  button, select, summary, a {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  button:not(:disabled), select, summary {
+    cursor: pointer;
+  }
+
+  option {
+    background: var(--color-surface);
+    color: var(--color-ink);
   }
 
   :focus-visible {
@@ -83,7 +161,51 @@
   }
 }
 
+@keyframes landing-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
 @layer components {
+  .landing-enter {
+    animation: landing-enter 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .landing-delay-1 { animation-delay: 90ms; }
+  .landing-delay-2 { animation-delay: 180ms; }
+  .landing-delay-3 { animation-delay: 270ms; }
+
+  .landing-reveal {
+    transition: opacity 650ms cubic-bezier(0.16, 1, 0.3, 1), transform 650ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .landing-reveal[data-reveal="pending"] {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  .landing-reveal:focus-within {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0ms;
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .landing-step[data-reveal="visible"]:hover {
+      transform: translateY(-3px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .landing-enter, .landing-reveal {
+      animation: none !important;
+      transition: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
   .fade-away {
     animation: fade-away 6s ease-in forwards;
   }
@@ -96,7 +218,7 @@
   }
 
   .input-base {
-    @apply block w-full rounded-lg border border-line-strong bg-surface px-3 py-2.5 text-[15px] text-ink shadow-[inset_0_1px_1px_rgb(28_26_23/0.03)] transition-colors placeholder:text-ink-muted/70 hover:border-ink-muted/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:cursor-not-allowed disabled:bg-sunken aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger/20;
+    @apply block w-full min-w-0 rounded-xl border border-line-strong bg-surface px-3.5 py-2.5 text-base text-ink transition-colors placeholder:text-ink-muted hover:border-ink-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:cursor-not-allowed disabled:bg-sunken aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger/20;
   }
 
   .brand-scope .input-base {

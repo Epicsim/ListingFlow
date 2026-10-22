@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { SignInForm } from "@/components/auth-forms";
 import { Notice } from "@/components/ui/display";
 import { getSessionUser } from "@/lib/auth/session";
-import { getBackend } from "@/lib/config";
 import { safeNextPath } from "@/lib/request-origin";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -20,13 +19,16 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       <p className="mt-1 mb-6 text-sm text-ink-muted">Sign in to see your inquiries and consultations.</p>
       {params.error === "link" ? (
         <Notice tone="warning" className="mb-4">
-          That link has expired or was already used. Sign in, or request a new link.
+          That link has expired or could not be verified. Sign in, or{" "}
+          <Link href="/forgot-password" className="font-medium underline underline-offset-4">
+            request a new password reset link
+          </Link>.
         </Notice>
       ) : null}
-      <SignInForm next={next} showForgot={getBackend() === "supabase"} />
+      <SignInForm next={next} />
       <p className="mt-6 text-center text-sm text-ink-muted">
         New here?{" "}
-        <Link href="/signup" className="font-medium text-accent underline-offset-4 hover:underline">
+        <Link href="/signup" className="font-medium text-accent-ink underline-offset-4 hover:underline">
           Create an account
         </Link>
       </p>

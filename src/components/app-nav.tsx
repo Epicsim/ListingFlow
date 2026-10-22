@@ -1,6 +1,6 @@
 "use client";
 
-import { Inbox, LayoutDashboard, Megaphone, Settings, Users } from "lucide-react";
+import { ChevronRight, Inbox, LayoutDashboard, Megaphone, Settings, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -19,7 +19,7 @@ function isActive(pathname: string, href: string) {
 export function SideNav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="space-y-0.5">
+    <nav aria-label="Main" className="space-y-1.5">
       {ITEMS.map(({ href, label, icon: Icon }) => {
         const active = isActive(pathname, href);
         return (
@@ -27,11 +27,11 @@ export function SideNav() {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] transition-colors ${
-              active ? "bg-surface font-medium text-ink shadow-card ring-1 ring-line" : "text-ink-soft hover:bg-sunken hover:text-ink"
+            className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+              active ? "bg-accent-soft font-semibold text-accent-ink" : "text-ink-soft hover:bg-sunken hover:text-ink"
             }`}
           >
-            <Icon aria-hidden className={`size-[18px] ${active ? "text-accent" : "text-ink-muted"}`} />
+            <Icon aria-hidden strokeWidth={1.8} className="size-[18px]" />
             {label}
           </Link>
         );
@@ -43,8 +43,8 @@ export function SideNav() {
 export function TabNav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none]">
-      <ul className="flex gap-1">
+    <nav aria-label="Main" className="min-w-0 overflow-x-auto [scrollbar-width:none]">
+      <ul className="flex justify-between gap-1 sm:justify-start">
         {ITEMS.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
@@ -52,8 +52,8 @@ export function TabNav() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm whitespace-nowrap ${
-                  active ? "bg-ink text-white" : "text-ink-soft hover:bg-sunken"
+                className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] whitespace-nowrap sm:flex-row sm:gap-1.5 sm:px-3 sm:text-sm ${
+                  active ? "bg-accent-soft font-semibold text-accent-ink" : "text-ink-soft hover:bg-sunken"
                 }`}
               >
                 <Icon aria-hidden className="size-4" />
@@ -64,5 +64,17 @@ export function TabNav() {
         })}
       </ul>
     </nav>
+  );
+}
+
+export function WorkspaceBreadcrumb() {
+  const pathname = usePathname();
+  const current = ITEMS.find((item) => isActive(pathname, item.href));
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="text-ink-muted">Workspace</span>
+      <ChevronRight aria-hidden className="size-3.5 text-ink-muted" />
+      <span className="font-medium text-ink">{current?.label ?? "Overview"}</span>
+    </div>
   );
 }

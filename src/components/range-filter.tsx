@@ -9,7 +9,7 @@ export function RangeFilter({ range }: { range: ResolvedRange }) {
         <label htmlFor="range" className="mb-1 block text-xs font-medium text-ink-muted">
           Period
         </label>
-        <select id="range" name="range" defaultValue={range.key === "custom" ? "30d" : range.key} className="input-base h-9 w-auto py-1.5 pr-8 text-sm">
+        <select id="range" name="range" defaultValue={range.key === "custom" ? "30d" : range.key} className="input-base h-11 w-auto py-1.5 pr-8 text-base sm:h-9 sm:text-sm">
           {RANGE_PRESETS.map((p) => (
             <option key={p.key} value={p.key}>
               {p.label}
@@ -18,7 +18,7 @@ export function RangeFilter({ range }: { range: ResolvedRange }) {
         </select>
       </div>
       <details className="group relative" open={range.key === "custom"}>
-        <summary className="flex h-9 cursor-pointer list-none items-center rounded-lg px-2.5 text-sm text-ink-soft hover:bg-sunken [&::-webkit-details-marker]:hidden">
+        <summary className="flex h-11 cursor-pointer list-none items-center rounded-xl px-2.5 text-sm text-ink-soft hover:bg-sunken sm:h-9 [&::-webkit-details-marker]:hidden">
           Custom dates
         </summary>
         <div className="mt-2 flex flex-wrap items-end gap-2 sm:absolute sm:right-0 sm:z-10 sm:mt-1 sm:rounded-lg sm:border sm:border-line sm:bg-surface sm:p-3 sm:shadow-raised">
@@ -26,17 +26,17 @@ export function RangeFilter({ range }: { range: ResolvedRange }) {
             <label htmlFor="from" className="mb-1 block text-xs font-medium text-ink-muted">
               From
             </label>
-            <input id="from" type="date" name="from" defaultValue={range.key === "custom" ? (range.fromDate ?? "") : ""} className="input-base h-9 py-1.5 text-sm" />
+            <input id="from" type="date" name="from" defaultValue={range.key === "custom" ? (range.fromDate ?? "") : ""} className="input-base h-11 py-1.5 text-base sm:h-9 sm:text-sm" />
           </div>
           <div>
             <label htmlFor="to" className="mb-1 block text-xs font-medium text-ink-muted">
               To
             </label>
-            <input id="to" type="date" name="to" defaultValue={range.key === "custom" ? range.toDate : ""} className="input-base h-9 py-1.5 text-sm" />
+            <input id="to" type="date" name="to" defaultValue={range.key === "custom" ? range.toDate : ""} className="input-base h-11 py-1.5 text-base sm:h-9 sm:text-sm" />
           </div>
         </div>
       </details>
-      <button type="submit" className="h-9 rounded-lg border border-line-strong bg-surface px-3 text-sm font-medium shadow-sm hover:bg-sunken/60">
+      <button type="submit" className="h-11 rounded-xl border border-line-strong bg-surface px-3 text-sm font-medium shadow-sm hover:bg-sunken/60 sm:h-9">
         Apply
       </button>
     </form>

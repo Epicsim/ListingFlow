@@ -65,7 +65,7 @@ export default async function OutboxPage() {
                       {e.contact_id ? (
                         <>
                           {" "}
-                          <Link href={`/leads/${e.contact_id}`} className="text-accent hover:underline">
+                          <Link href={`/leads/${e.contact_id}`} className="text-accent-ink hover:underline">
                             Open lead{e.contact_name ? ` (${e.contact_name})` : ""}
                           </Link>
                         </>

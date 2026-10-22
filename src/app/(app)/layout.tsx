@@ -1,7 +1,7 @@
 import { LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { signOutAction } from "@/app/(auth)/actions";
-import { SideNav, TabNav } from "@/components/app-nav";
+import { SideNav, TabNav, WorkspaceBreadcrumb } from "@/components/app-nav";
 import { BrandMark } from "@/components/brand-mark";
 import { Badge } from "@/components/ui/display";
 import { requireAgent } from "@/lib/auth/session";
@@ -49,7 +49,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[248px_1fr]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[240px_1fr]">
       <a
         href="#main"
         className="sr-only z-50 rounded-md bg-surface px-3 py-2 focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
@@ -57,7 +57,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         Skip to content
       </a>
 
-      <aside className="sticky top-0 hidden h-screen flex-col border-r border-line bg-canvas px-4 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-surface px-4 py-7 lg:flex">
         <div className="flex items-center justify-between px-2">
           <BrandMark href="/dashboard" />
         </div>
@@ -66,7 +66,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <Badge tone="warning">Local mode</Badge>
           </div>
         ) : null}
-        <div className="mt-6 flex-1">
+        <div className="mt-10 flex-1">
+          <p className="mb-3 px-3 text-[10px] font-semibold tracking-[0.15em] text-ink-muted uppercase">Workspace</p>
           <SideNav />
         </div>
         <div className="space-y-2 border-t border-line pt-4">
@@ -76,17 +77,22 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 border-b border-line bg-canvas/95 px-4 pt-3 pb-2.5 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-20 border-b border-line bg-surface px-4 pt-3 pb-2.5 lg:hidden">
           <div className="mb-2.5 flex items-center justify-between gap-3">
             <BrandMark href="/dashboard" />
-            <div className="flex items-center gap-2">
-              {local ? <Badge tone="warning">Local mode</Badge> : null}
-              {signOut}
+            <div className="flex items-center gap-1">
+              <form action={signOutAction}>
+                <button type="submit" aria-label="Sign out" className="flex size-11 items-center justify-center rounded-xl text-ink-muted hover:bg-sunken"><LogOut aria-hidden className="size-4" /></button>
+              </form>
             </div>
           </div>
           <TabNav />
+          {local ? <p className="mt-1 text-xs text-ink-muted">Local mode · stored on this computer</p> : null}
         </header>
-        <main id="main" className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+        <header className="sticky top-0 z-20 hidden h-[76px] items-center justify-between border-b border-line bg-surface px-8 lg:flex xl:px-10">
+          <WorkspaceBreadcrumb />
+        </header>
+        <main id="main" className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-6 lg:px-8 lg:py-9 xl:px-10">
           {children}
         </main>
       </div>

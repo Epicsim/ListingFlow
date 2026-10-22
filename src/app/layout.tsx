@@ -1,15 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import { brand } from "@/config/brand";
+import { ThemeSync } from "@/components/theme-control";
+import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  display: "swap",
-  axes: ["opsz", "SOFT"],
-});
 
 export const metadata: Metadata = {
   title: { default: brand.name, template: `%s · ${brand.name}` },
@@ -17,15 +13,19 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7f4ee",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f7fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#10141e" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${fraunces.variable} h-full antialiased`}>
-      <body className="min-h-full">{children}</body>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} h-full antialiased`}>
+      <head><script dangerouslySetInnerHTML={{ __html: themeInitScript }} /></head>
+      <body className="min-h-full"><ThemeSync />{children}</body>
     </html>
   );
 }

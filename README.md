@@ -84,6 +84,17 @@ To start over completely, stop the server and delete the `.data/` folder.
 > Postgres wire connection, but it has **not** yet been exercised against a live Supabase project (none was
 > available while building). Do a sign-up → publish → submit → dashboard pass after your first deploy.
 
+### Password recovery
+
+The sign-in page links to **Forgot your password?** In Supabase mode, a reset request opens a confirmation
+page with the same wording for existing and unknown accounts. Supabase Auth sends the recovery email; these
+emails are separate from the app's inquiry Outbox and its `EMAIL_DELIVERY` setting.
+
+Open the recovery link in the same browser where you requested it so the PKCE verifier cookie is available.
+The exact allowlisted `/auth/callback` URL verifies the link and routes recovery sessions to `/reset-password`.
+Choose a password of 8–200 characters and confirm it; after saving, the account stays signed in. Expired links,
+missing sessions and provider failures offer a retry path. Local mode explains that email recovery is unavailable.
+
 ### Email delivery (optional)
 
 Messages are always written to the in-app **Outbox**. They are sent only when all of these are set:

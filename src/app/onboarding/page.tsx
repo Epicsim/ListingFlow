@@ -16,11 +16,11 @@ export default async function OnboardingPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="px-4 py-5 sm:px-8">
+      <header className="flex items-center justify-between gap-3 px-4 py-5 sm:px-8">
         <BrandMark href="/onboarding" />
       </header>
       <main className="mx-auto max-w-3xl px-4 pt-4 pb-20 sm:px-6">
-        <p className="text-sm font-medium text-accent">Step 1 of 2 · Your profile</p>
+        <p className="text-sm font-medium text-accent-ink">Step 1 of 2 · Your profile</p>
         <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Tell homeowners who you are</h1>
         <p className="mt-2 mb-8 max-w-2xl text-[15px] text-ink-muted">
           Just the basics for now. Next, you&rsquo;ll create a seller page with ready-to-edit starter copy that you

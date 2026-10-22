@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, BellRing, CalendarClock, Check, Circle } from "lucide-react";
+import { Activity, ArrowRight, BellRing, CalendarCheck, CalendarClock, Check, Circle, MessageSquare, Plus, Users, type LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -22,28 +22,24 @@ function Stat({
   value,
   hint,
   href,
+  icon: Icon,
 }: {
   label: string;
   value: number;
   hint: string;
   href?: string;
+  icon: LucideIcon;
 }) {
-  const body = (
-    <>
-      <dt className="text-sm text-ink-muted">{label}</dt>
-      <dd className="mt-2 text-3xl font-semibold tracking-tight tabular-nums">{value}</dd>
-      <p className="mt-1 text-xs text-ink-muted">{hint}</p>
-    </>
-  );
   return (
-    <div className="rounded-xl border border-line bg-surface shadow-card">
+    <div className={`relative rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-5 xl:p-6 ${href ? "transition-colors hover:bg-sunken/40" : ""}`}>
+      <dt className="mb-5 flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-ink-soft sm:text-sm">{label}</span>
+        <span className="hidden size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-ink sm:flex"><Icon aria-hidden strokeWidth={1.7} className="size-[18px]" /></span>
+      </dt>
+      <dd><span className="text-[36px] leading-none font-semibold tracking-[-0.05em] tabular-nums">{value}</span><span className="mt-3 block text-xs leading-relaxed text-ink-muted">{hint}</span></dd>
       {href ? (
-        <Link href={href} className="block h-full rounded-xl p-5 hover:bg-sunken/30">
-          {body}
-        </Link>
-      ) : (
-        <div className="p-5">{body}</div>
-      )}
+        <Link href={href} className="absolute inset-0 rounded-2xl"><span className="sr-only">View {label.toLowerCase()}</span></Link>
+      ) : null}
     </div>
   );
 }
@@ -96,9 +92,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   return (
     <>
       <PageHeader
-        title={`Hi, ${firstName}`}
-        description={`Showing ${range.label.toLowerCase()} · times in ${tz.replace(/_/g, " ")}`}
-        actions={<RangeFilter range={range} />}
+        title="Overview"
+        description={`Welcome back, ${firstName}. Here’s what’s happening with your business.`}
+        actions={<ButtonLink href="/campaigns/new"><Plus aria-hidden className="size-4" />Create campaign</ButtonLink>}
       />
 
       {gettingStarted ? (
@@ -135,18 +131,23 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         </Card>
       ) : null}
 
-      <dl className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <Stat label="New inquiries" value={metrics.new_inquiries} hint={`${metrics.new_leads} new lead${metrics.new_leads === 1 ? "" : "s"}`} href="/leads" />
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div><h2 className="text-sm font-semibold">Performance at a glance</h2><p className="mt-1 text-xs text-ink-muted">{range.label} · {tz.replace(/_/g, " ")}</p></div>
+        <RangeFilter range={range} />
+      </div>
+      <dl className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <Stat icon={MessageSquare} label="New inquiries" value={metrics.new_inquiries} hint={`${metrics.new_leads} new lead${metrics.new_leads === 1 ? "" : "s"}`} href="/leads" />
         <Stat
+          icon={Users}
           label="Awaiting follow-up"
           value={metrics.awaiting_follow_up}
           hint="Right now: new or follow-up due"
           href="/leads?view=needs_follow_up"
         />
-        <Stat label="Consultations booked" value={metrics.consultations_booked} hint="Recorded by you, excl. canceled" />
-        <Stat label="Consultations attended" value={metrics.consultations_attended} hint="Marked attended" />
+        <Stat icon={CalendarClock} label="Consultations booked" value={metrics.consultations_booked} hint="Recorded by you, excl. canceled" />
+        <Stat icon={CalendarCheck} label="Consultations attended" value={metrics.consultations_attended} hint="Marked attended" />
       </dl>
-      <p className="mt-3 text-sm text-ink-muted">
+      <p className="mt-4 text-xs leading-relaxed text-ink-muted">
         Booking-link clicks: <span className="font-medium text-ink tabular-nums">{metrics.booking_clicks}</span>{" "}
         <span className="text-xs">– homeowners who opened your scheduler. These aren&rsquo;t confirmed appointments.</span>
       </p>

@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 
 export function Card({ className = "", ...props }: ComponentProps<"section">) {
-  return <section className={`rounded-xl border border-line bg-surface shadow-card ${className}`} {...props} />;
+  return <section className={`rounded-2xl border border-line bg-surface shadow-card ${className}`} {...props} />;
 }
 
 export function CardHeader({
@@ -16,9 +16,9 @@ export function CardHeader({
   id?: string;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-5 sm:px-6">
       <div className="min-w-0">
-        <h2 id={id} className="text-[15px] font-semibold text-ink">
+        <h2 id={id} className="text-[15px] font-semibold tracking-tight text-ink">
           {title}
         </h2>
         {description ? <p className="mt-0.5 text-sm text-ink-muted">{description}</p> : null}
@@ -40,10 +40,10 @@ export function PageHeader({
   eyebrow?: ReactNode;
 }) {
   return (
-    <header className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
+    <header className="mb-7 flex flex-wrap items-center justify-between gap-5 sm:mb-9">
       <div className="min-w-0">
         {eyebrow ? <div className="mb-1.5 text-sm text-ink-muted">{eyebrow}</div> : null}
-        <h1 className="font-display text-[28px] leading-tight font-semibold tracking-tight text-ink sm:text-[32px]">
+        <h1 className="font-display text-[28px] leading-tight font-semibold tracking-[-0.035em] text-ink sm:text-[34px]">
           {title}
         </h1>
         {description ? <p className="mt-1.5 max-w-2xl text-[15px] text-ink-muted">{description}</p> : null}

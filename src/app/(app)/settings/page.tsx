@@ -19,7 +19,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Settings" description="Your profile, branding, booking link, notifications and time zone." />
+      <PageHeader title="Settings" description="Make this workspace yours. Manage your appearance, profile and preferences." />
       <SettingsTabs />
       <div className="grid gap-6 xl:grid-cols-[1fr_320px] [&>*]:min-w-0">
         <ProfileForm

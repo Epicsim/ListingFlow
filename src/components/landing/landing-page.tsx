@@ -1,6 +1,6 @@
 import { Mail, MapPin, Phone } from "lucide-react";
 import type { ReactNode } from "react";
-import { brand } from "@/config/brand";
+import { BrandMark } from "@/components/brand-mark";
 import type { PublicCampaign } from "@/lib/data/public";
 import { brandStyle } from "@/lib/color";
 import { assetUrl } from "@/lib/images";
@@ -68,7 +68,7 @@ export function LandingFooter({ data }: { data: LandingData }) {
           <a href={privacyHref(data)} className="underline-offset-4 hover:text-ink hover:underline">
             Privacy
           </a>
-          <span>Page by {brand.name}</span>
+          <span className="inline-flex items-center gap-2">Page by <BrandMark compact /></span>
         </nav>
       </div>
     </footer>

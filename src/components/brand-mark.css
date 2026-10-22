@@ -1,0 +1,48 @@
+/* Frame the original artwork without its transparent outer margins.
+   Source: 2172 × 724. Logo viewport: x=128, y=184, w=1936, h=368. */
+.brand-logo {
+  position: relative;
+  display: block;
+  width: 190px;
+  aspect-ratio: 1936 / 368;
+  overflow: hidden;
+}
+
+.brand-logo-compact {
+  width: 132px;
+}
+
+.brand-logo-image {
+  position: absolute;
+  left: -6.61157%;
+  top: -50%;
+  width: 112.19008%;
+  max-width: none;
+  height: auto;
+}
+
+/* The symbol uses the same crop as the browser icon. */
+.brand-glyph {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+
+.brand-glyph-image {
+  position: absolute;
+  left: -23.33333%;
+  top: -25.83333%;
+  width: 452.5%;
+  max-width: none;
+  height: auto;
+}
+
+/* Keep the approved silhouette readable on dark workspace surfaces. */
+html[data-theme="dark"] .brand-logo-image {
+  filter: brightness(0) invert(1);
+}
+
+html[data-theme="dark"] .light-scope .brand-logo-image,
+html[data-theme="dark"] .brand-scope .brand-logo-image {
+  filter: none;
+}

@@ -64,7 +64,8 @@ export default async function LeadsPage({ searchParams }: PageProps<"/leads">) {
     <>
       <PageHeader
         title="Leads"
-        description="Homeowners who asked for an estimate. Repeat requests are grouped under the same person."
+        description="Your seller inquiries, organized. Keep every conversation moving."
+        actions={<Badge>{result.total} lead{result.total === 1 ? "" : "s"}</Badge>}
       />
 
       {pick(sp.deleted) === "1" ? (
@@ -81,7 +82,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/leads">) {
             </label>
             <div className="relative">
               <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-muted" />
-              <input id="q" name="q" type="search" defaultValue={filters.q} placeholder="Name, email, phone or address" className="input-base h-9 py-1.5 pl-9 text-sm" />
+              <input id="q" name="q" type="search" defaultValue={filters.q} placeholder="Name, email, phone or address" className="input-base h-11 py-1.5 pl-9 text-base sm:h-9 sm:text-sm" />
             </div>
           </div>
           <FilterSelect id="status" label="Status" value={filters.status}>
@@ -113,7 +114,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/leads">) {
             ))}
           </FilterSelect>
           <div className="col-span-2 flex items-center gap-2 lg:col-span-1">
-            <button type="submit" className="h-9 rounded-lg bg-accent px-4 text-sm font-medium text-white hover:bg-accent-hover">
+            <button type="submit" className="h-11 rounded-xl bg-accent px-4 text-sm font-medium text-white hover:bg-accent-hover sm:h-9">
               Apply
             </button>
             {filtering ? (
@@ -260,7 +261,7 @@ function FilterSelect({ id, label, value, children }: { id: string; label: strin
       <label htmlFor={id} className="mb-1 block text-xs font-medium text-ink-muted">
         {label}
       </label>
-      <select id={id} name={id} defaultValue={value ?? ""} className="input-base h-9 py-1.5 pr-8 text-sm">
+      <select id={id} name={id} defaultValue={value ?? ""} className="input-base h-11 py-1.5 pr-8 text-base sm:h-9 sm:text-sm">
         <option value="">All</option>
         {children}
       </select>

@@ -301,11 +301,11 @@ export default async function LeadPage({ params }: PageProps<"/leads/[id]">) {
           <Card>
             <CardHeader title="Contact" />
             <div className="space-y-3 p-5 text-sm">
-              <a href={`mailto:${contact.email}`} className="flex items-center gap-2 font-medium break-all text-accent hover:underline">
+              <a href={`mailto:${contact.email}`} className="flex items-center gap-2 font-medium break-all text-accent-ink hover:underline">
                 <MailCheck aria-hidden className="size-4 shrink-0" /> {contact.email}
               </a>
               {contact.phone ? (
-                <a href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`} className="flex items-center gap-2 font-medium text-accent hover:underline">
+                <a href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`} className="flex items-center gap-2 font-medium text-accent-ink hover:underline">
                   <Phone aria-hidden className="size-4 shrink-0" /> {contact.phone}
                 </a>
               ) : null}

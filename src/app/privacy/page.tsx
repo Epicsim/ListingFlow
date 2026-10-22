@@ -62,7 +62,7 @@ export default function PrivacyPage() {
           </section>
         </div>
         <p className="mt-10 text-sm">
-          <Link href="/" className="text-accent underline-offset-4 hover:underline">
+          <Link href="/" className="text-accent-ink underline-offset-4 hover:underline">
             About {brand.name}
           </Link>
         </p>

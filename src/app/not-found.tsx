@@ -10,7 +10,7 @@ export default function NotFound() {
           The link may be mistyped, or the page may have been unpublished. If an agent shared it with you, please
           contact them directly.
         </p>
-        <Link href="/" className="mt-6 inline-block text-sm font-medium text-accent underline-offset-4 hover:underline">
+        <Link href="/" className="mt-6 inline-block text-sm font-medium text-accent-ink underline-offset-4 hover:underline">
           Go to the home page
         </Link>
       </div>
