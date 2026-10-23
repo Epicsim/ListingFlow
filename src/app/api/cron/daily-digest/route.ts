@@ -4,6 +4,7 @@ import { asService, asUser } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 const headers = { "Cache-Control": "no-store" };
 export async function GET(request: Request) {
   if (!process.env.CRON_SECRET?.trim()) return Response.json({ error: "cron_unconfigured" }, { status: 503, headers });

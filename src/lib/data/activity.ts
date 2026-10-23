@@ -12,7 +12,7 @@ export interface ActivityEvent {
   contact_name?: string | null;
 }
 
-/** Records something the agent did. Visitor/system events are written by the database functions. */
+/** System events require a service transaction; RLS still forbids agent impersonation. */
 export async function logAgentEvent(
   tx: Tx,
   agentId: string,
@@ -23,16 +23,18 @@ export async function logAgentEvent(
     campaignId?: string | null;
     data?: Record<string, unknown>;
   },
+  actor: "agent" | "system" = "agent",
 ): Promise<void> {
   await tx.query(
     `insert into public.activity_events (agent_id, contact_id, inquiry_id, campaign_id, type, actor, data)
-     values ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text, 'agent', $6::text::jsonb)`,
+     values ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text, $6::text, $7::text::jsonb)`,
     [
       agentId,
       event.contactId ?? null,
       event.inquiryId ?? null,
       event.campaignId ?? null,
       event.type,
+      actor,
       JSON.stringify(event.data ?? {}),
     ],
   );

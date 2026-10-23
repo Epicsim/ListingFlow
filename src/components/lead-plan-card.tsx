@@ -1,4 +1,4 @@
-import { startPlanAction, stopPlanAction, toggleTaskAction } from "@/app/(app)/leads/actions";
+import { startPlanAction, stopPlanAction, toggleTaskAction, skipPlanStepAction } from "@/app/(app)/leads/actions";
 import type { TaskRecord, EmailRecord, Contact } from "@/lib/data/leads";
 import type { Enrollment, FollowUpPlan } from "@/lib/data/plans";
 import { EMAIL_STATUS_LABELS } from "@/lib/domain";
@@ -19,13 +19,18 @@ export function LeadPlanCard({ enrollments, plans, tasks, emails, contact, timeZ
       <p className="text-xs text-ink-muted">Started {formatDateTime(e.started_at, timeZone)}</p>
       <ol className="space-y-3">{tasks.filter((t) => t.enrollment_id === e.id).map((t) => {
         const email = emails.find((m) => m.id === t.email_id);
+        const sending = t.kind === "email" && email?.status === "queued";
         return <li key={t.id} className="space-y-2 rounded-xl border border-line p-3">
           <p className="text-sm font-medium break-words">{t.title}</p>
-          <p className="text-xs text-ink-muted">{t.kind === "email" ? "Email" : TASK_KIND_LABELS[t.kind]} · {t.canceled_at ? `Canceled · ${STOP_REASON_LABELS[t.cancel_reason ?? ""] ?? t.cancel_reason}` : t.completed_at ? "Done" : `Due ${formatDateTime(t.due_at, timeZone)}`}</p>
+          <p className="text-xs text-ink-muted">{t.kind === "email" ? "Email" : TASK_KIND_LABELS[t.kind]} · {t.canceled_at ? t.cancel_reason === "skipped" ? "Skipped by you" : `Canceled · ${STOP_REASON_LABELS[t.cancel_reason ?? ""] ?? t.cancel_reason}` : t.completed_at ? "Done" : `Due ${formatDateTime(t.due_at, timeZone)}`}</p>
           {email ? <Badge>{EMAIL_STATUS_LABELS[email.status]}</Badge> : null}
           {!t.completed_at && !t.canceled_at && t.kind === "email" ? <ButtonLink size="sm" variant="secondary" href={`/leads/${contact.id}?task=${t.id}#follow-up-email`}>{email?.status === "queued" ? "View email status" : "Review draft"}</ButtonLink> : null}
           {t.kind === "text" ? <div className="space-y-2 text-sm"><p>{contact.phone ?? "No phone number provided"} · You send it yourself</p>{t.text_message ? <><p className="whitespace-pre-wrap break-words">{t.text_message}</p><CopyButton value={t.text_message} label="Copy message" /></> : null}</div> : null}
           {!t.completed_at && !t.canceled_at && t.kind !== "email" ? <form action={toggleTaskAction}><input type="hidden" name="task_id" value={t.id} /><input type="hidden" name="completed" value="true" /><Button type="submit" size="sm" variant="secondary">Mark done</Button></form> : null}
+          {!t.completed_at && !t.canceled_at ? sending ? <p className="text-xs text-ink-muted">This email is being sent – check its status in your outbox.</p> : <ActionForm action={skipPlanStepAction}>
+            <input type="hidden" name="task_id" value={t.id} />
+            <SubmitButton variant="ghost" size="sm">Skip</SubmitButton>
+          </ActionForm> : null}
         </li>;
       })}{e.skipped_steps.map((s, i) => <li key={`skipped-${i}`} className="rounded-xl border border-dashed border-line p-3 text-sm text-ink-muted">Day {s.day_offset} · {s.title}<span className="mt-1 block">{s.reason === "no_marketing_consent" ? "Skipped – no marketing consent" : "Skipped – homeowner unsubscribed"}</span></li>)}</ol>
     </div>) : <p className="text-sm text-ink-muted">No plan started for this lead.</p>}

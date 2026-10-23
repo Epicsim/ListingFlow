@@ -1,10 +1,11 @@
 import type { Tx } from "@/lib/db/types";
-import type { Timeline } from "@/lib/domain";
 import { renderTemplate, firstName } from "@/lib/email/templates";
 import { templateValuesFor } from "@/lib/email/messages";
 import { CONSENT_REQUIRED_AFTER_DAYS, MAX_PLANS, planDueAt, planSchema, planStepSchema, STARTER_PLANS, stepLimitError, type PlanInput, type PlanStepInput, type StepKind } from "@/lib/follow-up-plans";
 import { getProfile } from "./profiles";
 import { getContact } from "./leads";
+import { logAgentEvent } from "./activity";
+import type { AgentProfile } from "./profiles";
 
 export class PlanError extends Error {}
 export interface FollowUpPlan extends PlanInput { id: string; position: number; campaign_name: string | null; step_count: number }
@@ -12,10 +13,36 @@ export interface PlanStep extends PlanStepInput { id: string }
 export interface SkippedStep { day_offset: number; title: string; reason: "no_marketing_consent" | "unsubscribed" }
 export interface Enrollment { id: string; plan_name: string; status: "active" | "completed" | "stopped"; stop_reason: string | null; started_at: Date; skipped_steps: SkippedStep[] }
 
+const PLAN_SELECT = `select p.id, p.name, p.is_active, p.position, p.timelines, p.campaign_id,
+  c.name as campaign_name, (select count(*)::int from public.follow_up_plan_steps s where s.plan_id = p.id) as step_count
+  from public.follow_up_plans p left join public.campaigns c on c.id = p.campaign_id and c.agent_id = p.agent_id`;
+const EMPTY_PLAN_MESSAGE = "Add at least one step before switching this plan on. Create it switched off, then add your steps.";
+
+export async function getPlan(tx: Tx, agentId: string, planId: string, lock?: "share" | "update"): Promise<FollowUpPlan | null> {
+  const locking = lock === "share" ? "for share of p" : lock === "update" ? "for update of p" : "";
+  return (await tx.query<FollowUpPlan>(`${PLAN_SELECT} where p.agent_id = $1::uuid and p.id = $2::uuid ${locking}`, [agentId, planId]))[0] ?? null;
+}
+
+/** Use the enrollment's source inquiry when available, otherwise the latest one. */
+export async function getPlanTemplateValues(
+  tx: Tx, agentId: string, contact: { id: string; full_name: string }, profile: AgentProfile,
+  source: { inquiryId?: string; enrollmentId?: string | null } = {},
+) {
+  const inquiry = (await tx.query<{ property_address: string; booking_url: string | null }>(`select i.property_address,
+    coalesce(c.booking_url, p.booking_url) as booking_url
+    from public.inquiries i join public.campaigns c on c.id = i.campaign_id and c.agent_id = i.agent_id
+    join public.agent_profiles p on p.id = i.agent_id
+    left join public.follow_up_enrollments e on e.id = $4::uuid and e.agent_id = i.agent_id and e.contact_id = i.contact_id
+    where i.agent_id = $1::uuid and i.contact_id = $2::uuid
+      and ($4::uuid is null or e.id is not null)
+      and (coalesce($3::uuid, e.inquiry_id) is null or i.id = coalesce($3::uuid, e.inquiry_id))
+    order by i.created_at desc, i.id limit 1`, [agentId, contact.id, source.inquiryId ?? null, source.enrollmentId ?? null]))[0];
+  if ((source.inquiryId || source.enrollmentId) && !inquiry) throw new PlanError("This plan's inquiry could not be found.");
+  return templateValuesFor(profile, { full_name: contact.full_name, property_address: inquiry?.property_address }, inquiry?.booking_url ?? profile.booking_url);
+}
+
 export async function listPlans(tx: Tx, agentId: string): Promise<FollowUpPlan[]> {
-  return tx.query<FollowUpPlan>(`select p.id, p.name, p.is_active, p.position, p.timelines, p.campaign_id,
-    c.name as campaign_name, (select count(*)::int from public.follow_up_plan_steps s where s.plan_id = p.id) as step_count
-    from public.follow_up_plans p left join public.campaigns c on c.id = p.campaign_id and c.agent_id = p.agent_id
+  return tx.query<FollowUpPlan>(`${PLAN_SELECT}
     where p.agent_id = $1::uuid order by p.position, p.created_at, p.id`, [agentId]);
 }
 export async function getPlanSteps(tx: Tx, agentId: string, planId: string): Promise<PlanStep[]> {
@@ -26,6 +53,9 @@ export async function savePlan(tx: Tx, agentId: string, input: PlanInput, id?: s
   const plan = planSchema.parse(input);
   // A stable per-agent lock enforces the plan limit across tabs and servers.
   await tx.query(`select id from public.agent_profiles where id = $1::uuid for update`, [agentId]);
+  const existing = id ? await getPlan(tx, agentId, id, "update") : null;
+  if (id && !existing) throw new PlanError("This plan could not be found.");
+  if (plan.is_active && !existing?.step_count) throw new PlanError(EMPTY_PLAN_MESSAGE);
   if (!id && (await listPlans(tx, agentId)).length >= MAX_PLANS) throw new PlanError("You can have up to 20 plans. Delete a plan before adding another.");
   const params = [agentId, plan.name, plan.is_active, JSON.stringify([...new Set(plan.timelines)]), plan.campaign_id];
   const timelines = `array(select jsonb_array_elements_text($4::text::jsonb))`;
@@ -56,11 +86,19 @@ export async function savePlanStep(tx: Tx, agentId: string, planId: string, inpu
 export async function deletePlanStep(tx: Tx, agentId: string, planId: string, stepId: string): Promise<void> {
   await tx.query(`select id from public.follow_up_plans where id = $1::uuid and agent_id = $2::uuid for update`, [planId, agentId]);
   await tx.query(`delete from public.follow_up_plan_steps where id = $1::uuid and agent_id = $2::uuid and plan_id = $3::uuid`, [stepId, agentId, planId]);
+  await tx.query(`update public.follow_up_plans p set is_active = false where p.id = $1::uuid and p.agent_id = $2::uuid
+    and p.is_active and not exists(select 1 from public.follow_up_plan_steps s where s.plan_id = p.id and s.agent_id = p.agent_id)`, [planId, agentId]);
 }
 export async function changePlan(tx: Tx, agentId: string, id: string, operation: "toggle" | "up" | "down" | "delete"): Promise<void> {
   await tx.query(`select id from public.agent_profiles where id = $1::uuid for update`, [agentId]);
   if (operation === "delete") { await tx.query(`delete from public.follow_up_plans where id = $1::uuid and agent_id = $2::uuid`, [id, agentId]); return; }
-  if (operation === "toggle") { await tx.query(`update public.follow_up_plans set is_active = not is_active where id = $1::uuid and agent_id = $2::uuid`, [id, agentId]); return; }
+  if (operation === "toggle") {
+    const plan = await getPlan(tx, agentId, id, "update");
+    if (!plan) throw new PlanError("This plan could not be found.");
+    if (!plan.is_active && !plan.step_count) throw new PlanError(EMPTY_PLAN_MESSAGE);
+    await tx.query(`update public.follow_up_plans set is_active = not is_active where id = $1::uuid and agent_id = $2::uuid`, [id, agentId]);
+    return;
+  }
   const plans = await listPlans(tx, agentId);
   const index = plans.findIndex((p) => p.id === id);
   const next = index + (operation === "up" ? -1 : 1);
@@ -91,8 +129,7 @@ export async function startPlan(tx: Tx, agentId: string, contactId: string, plan
   await tx.query(`select id from public.contacts where id = $1::uuid and agent_id = $2::uuid for update`, [contactId, agentId]);
   const contact = await getContact(tx, agentId, contactId);
   const profile = await getProfile(tx, agentId);
-  await tx.query(`select id from public.follow_up_plans where id = $1::uuid and agent_id = $2::uuid for share`, [planId, agentId]);
-  const plan = (await listPlans(tx, agentId)).find((p) => p.id === planId);
+  const plan = await getPlan(tx, agentId, planId, "share");
   if (!contact || !profile || !plan) return null;
   // Conservative: terminal pipeline statuses cannot restart a plan, even manually.
   if (["consultation_booked", "won", "lost"].includes(contact.status)) return null;
@@ -103,13 +140,7 @@ export async function startPlan(tx: Tx, agentId: string, contactId: string, plan
   const active = (await listEnrollments(tx, agentId, contactId)).find((e) => e.status === "active");
   if (active && !options.automatic) throw new PlanError("Stop the active plan before starting another.");
   if (active) await tx.query(`update public.follow_up_enrollments set status = 'stopped', stop_reason = 'repeat_inquiry', stopped_at = now(), stop_actor = 'system' where id = $1::uuid and agent_id = $2::uuid`, [active.id, agentId]);
-  const inquiry = (await tx.query<{ id: string; property_address: string; booking_url: string | null }>(`select i.id, i.property_address, coalesce(c.booking_url, p.booking_url) as booking_url
-    from public.inquiries i join public.campaigns c on c.id = i.campaign_id and c.agent_id = i.agent_id
-    join public.agent_profiles p on p.id = i.agent_id
-    where i.agent_id = $1::uuid and i.contact_id = $2::uuid and ($3::uuid is null or i.id = $3::uuid)
-    order by i.created_at desc, i.id limit 1`, [agentId, contactId, options.inquiryId ?? null]))[0];
-  if (options.inquiryId && !inquiry) throw new PlanError("This inquiry could not be found.");
-  const values = templateValuesFor(profile, { full_name: contact.full_name, property_address: inquiry?.property_address }, inquiry?.booking_url ?? profile.booking_url);
+  const values = await getPlanTemplateValues(tx, agentId, contact, profile, { inquiryId: options.inquiryId });
   const steps = await getPlanSteps(tx, agentId, planId);
   if (!steps.length) throw new PlanError("Add at least one step before starting this plan.");
   const skipped: SkippedStep[] = [];
@@ -129,16 +160,18 @@ export async function startPlan(tx: Tx, agentId: string, contactId: string, plan
       values($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::text, $6::text, $7::timestamptz, $8::text, $9::text, $10::text)`,
     [agentId, contactId, id, step.id, kind, title.slice(0, 200), planDueAt(now, step.day_offset, profile.timezone).toISOString(), step.email_subject, step.email_body, step.text_message ? renderTemplate(step.text_message, values).slice(0, 2000) : null]);
   }
-  await tx.query(`insert into public.activity_events(agent_id, contact_id, type, actor, data)
-    values($1::uuid, $2::uuid, 'plan_started', $3::text, $4::text::jsonb)`, [agentId, contactId, options.automatic ? "system" : "agent", JSON.stringify({ plan_name: plan.name })]);
+  await logAgentEvent(tx, agentId, { type: "plan_started", contactId, data: { plan_name: plan.name } }, options.automatic ? "system" : "agent");
   return id;
 }
 const TASK_TITLE = { call: "Call homeowner", email: "Review email draft", text: "Text homeowner" };
 
 export async function startMatchingPlan(tx: Tx, agentId: string, contactId: string, inquiryId: string, now?: Date): Promise<string | null> {
-  const inquiry = (await tx.query<{ timeline: Timeline; campaign_id: string }>(`select timeline, campaign_id from public.inquiries
-    where id = $1::uuid and agent_id = $2::uuid and contact_id = $3::uuid`, [inquiryId, agentId, contactId]))[0];
-  if (!inquiry) return null;
-  const match = (await listPlans(tx, agentId)).find((p) => p.is_active && p.timelines.includes(inquiry.timeline) && (!p.campaign_id || p.campaign_id === inquiry.campaign_id));
+  await tx.query(`select id from public.contacts where id = $1::uuid and agent_id = $2::uuid for update`, [contactId, agentId]);
+  const match = (await tx.query<{ id: string }>(`select p.id from public.follow_up_plans p
+    join public.inquiries i on i.agent_id = p.agent_id and i.id = $3::uuid and i.contact_id = $2::uuid
+    where p.agent_id = $1::uuid and p.is_active and i.timeline = any(p.timelines)
+      and (p.campaign_id is null or p.campaign_id = i.campaign_id)
+      and exists(select 1 from public.follow_up_plan_steps s where s.plan_id = p.id and s.agent_id = p.agent_id)
+    order by p.position, p.created_at, p.id limit 1 for share of p`, [agentId, contactId, inquiryId]))[0];
   return match ? startPlan(tx, agentId, contactId, match.id, { inquiryId, automatic: true, now }) : null;
 }

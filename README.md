@@ -183,6 +183,8 @@ Build plans in **Settings → Follow-up plans**, or add three starter plans to a
 switched off until reviewed. Plans are checked from top to bottom; the first active plan matching the inquiry's
 timeline and campaign is used. A repeat inquiry restarts the matching plan; a duplicate form retry does not.
 Switching a plan off only stops new enrollments. Agents can also start or stop a plan on a lead's page.
+Create a plan switched off and add at least one step before switching it on. Deleting its last step switches
+it off; automatic matching ignores any legacy empty plans and continues to the next match.
 
 **Plans create reminders and drafts. Nothing is sent until the agent presses Send on that specific draft.**
 There is no automatic plan email or SMS sending. Text steps provide copyable messages for the agent to send.
@@ -195,6 +197,11 @@ no email steps. Booking a consultation, marking a lead booked/won/lost, unsubscr
 plan cancels its remaining open tasks. Booking-link clicks don't stop a plan. Completed tasks and copied
 drafts stay in history, even after the plan is edited or deleted. Booked/won/lost leads must change status
 before another plan can start. A failed provider attempt leaves its email step open for review and retry.
+Each open call, email or text step also has a **Skip** action. It cancels only that step, shows **Skipped by you**,
+and completes the enrollment when no open steps remain. Stopped and completed enrollments cannot be reactivated;
+start a new enrollment instead. Drafts use the source inquiry's campaign booking link, falling back to the
+profile link (or the latest inquiry when no source was saved). Recording an old consultation's attended or
+no-show outcome does not stop a newer plan; inserting a non-canceled appointment or rebooking it does.
 
 ### Agent daily digest and cron
 
@@ -209,6 +216,9 @@ constant-time comparison, and refuses to run without a secret. It is never cache
 once between 13:00 and 13:59 UTC, so delivery time varies by time zone. A missed run means no digest that day;
 there is no backfill. A unique agent/local-date claim and the outbox row commit together, preventing duplicate
 digest creation. Failed delivery is recorded and is not automatically resent that day.
+The route sets a 60-second maximum duration, within Vercel Hobby's limit. The runner stops starting agents
+after 45 seconds, leaving 15 seconds for in-flight work and a count of agents not reached. Only that count is
+logged. On the daily Hobby schedule, agents not reached miss that day's digest; there is no next-day backfill.
 
 For Vercel Pro later, change the schedule to `0 * * * *` and set `DIGEST_LOCAL_HOUR=7`. Hourly runs skip agents
 before 7am locally and the date claim allows one digest per day, normally in their 7am hour. Leave the threshold

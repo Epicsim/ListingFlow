@@ -2,6 +2,42 @@
 
 Implemented October 22, 2026. This report covers only this task's changes. The existing working tree contained substantial unrelated uncommitted and untracked work, which was preserved. Nothing was committed, pushed or deployed, and no remote database migrations or service settings were changed.
 
+## Review fixes for commit 7a96461
+
+These local changes address the nine follow-up review findings. They are pending approval and have not been committed or pushed. Protected untracked content was left untouched.
+
+- Each open call/email/text plan task can be skipped independently. A narrowly scoped authenticated RPC checks ownership and active enrollment, fixes the reason to `skipped`, and leaves ordinary task cancellation columns ungranted. Skips display **Skipped by you**, leave no due work, and complete the enrollment after the last open step.
+- Plans must be created off, then given a step before being switched on. Deleting the last configured step switches the plan off without changing copied tasks. Automatic matching ignores legacy empty active plans.
+- Plan start and draft review share `getPlanTemplateValues`, using the enrollment's source inquiry campaign, otherwise the latest inquiry, then the profile booking link. `getPlan` replaces list scans in single-plan paths; matching selects one eligible plan directly. `logAgentEvent` accepts an optional actor and records automatic starts through the existing service transaction.
+- A new migration narrows appointment stop triggers to non-canceled inserts and transitions into scheduled. Recording old attended/no-show/canceled outcomes preserves newer plans. It also prevents enrollment reactivation and direct API completion; agents may stop active plans and private triggers complete them.
+- Delete plan requires an explicit checkbox, checked again in the server action.
+- Cron sets `maxDuration = 60`. The shared runner stops starting agents after 45 seconds, allows the in-flight operation to finish and logs only the count not reached. On the daily schedule, those agents miss that day's digest; no next-day backfill is attempted. The 60-second duration fits [Vercel Hobby's documented function limit](https://vercel.com/docs/functions/configuring-functions/duration).
+
+No new homeowner delivery path was introduced. Plan email sending remains in `saveFollowUpEmailAction`.
+
+Review-fix verification:
+
+- `LISTINGFLOW_BACKEND=local EMAIL_DELIVERY= npm run check` passed in the isolated APFS copy `/private/tmp/listingflow-review-bggvup3f`: lint, typecheck, all 283 tests across 27 files, and production build. The focused review suite passed 41 tests.
+- Browser walkthrough on port 3218 with the separate fictional database `/private/tmp/listingflow-review-walkthrough`: skipped one email task with **Skipped by you** while other tasks remained open; rejected both creating and switching on an empty plan; displayed a campaign-only booking link with the profile link unset; marked an old consultation no-show while the newer plan remained active.
+- No real email was sent. New migration permissions and status transitions were tested under authenticated, anonymous and service roles. Remote Supabase and deployed cron were not exercised.
+- The original port 3000 process and SHA-256 fingerprints of its `.next/BUILD_ID` and app-paths manifest remained unchanged. `git diff --check` passed. The temporary walkthrough server was stopped afterward.
+- Fictional walkthrough screenshot: `/Users/williamhartono/.codex/visualizations/2026/10/23/01a166e1-6c2c-7b03-ba6d-abb6880a4840/review-old-no-show.png`.
+
+
+Review-fix files (paths relative to the repository):
+
+| Files | Change |
+| --- | --- |
+| `supabase/migrations/20261022210000_follow_up_plan_review_fixes.sql` | Narrow skip RPC, status guard and appointment triggers. |
+| `src/lib/data/plans.ts`, `src/lib/data/tasks.ts`, `src/lib/data/activity.ts` | Plan guards/lookups, shared template context, skip repository and actor-aware activity. |
+| `src/lib/follow-up-plans.ts`, `src/components/lead-plan-card.tsx` | Skip label and individual step action. |
+| `src/app/(app)/leads/actions.ts`, `src/app/(app)/leads/[id]/page.tsx` | Skip server action and draft booking context. |
+| `src/app/(app)/settings/follow-up-plans/actions.ts`, `src/app/(app)/settings/follow-up-plans/[id]/page.tsx` | Delete confirmation and single-plan lookup. |
+| `src/lib/data/digests.ts`, `src/lib/daily-digest.ts`, `src/app/api/cron/daily-digest/route.ts` | Remaining-agent count, deadline and route duration. |
+| `tests/db/follow-up-plan-review.test.ts`, `tests/db/follow-up-plans.test.ts` | New behavior/RLS regression tests and valid plan fixture setup. |
+| `tests/unit/digest-budget.test.ts`, `tests/unit/plan-deletion-action.test.ts` | Deadline and confirmation regression tests. |
+| `README.md`, `docs/follow-up-plans-implementation.md` | Current behavior, digest limitation and this report. |
+
 ## Built
 
 - Settings → Follow-up plans: create/edit/delete plans and steps, timeline/campaign matching, on/off controls, priority buttons, editable off-by-default starter plans, variables and fictional previews.

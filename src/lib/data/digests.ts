@@ -8,6 +8,12 @@ export async function listDigestAgents(tx: Tx, after: string | null): Promise<{ 
     where send_daily_digest and ($1::uuid is null or id > $1::uuid) order by id limit 100`, [after]);
 }
 
+export async function countDigestAgentsAfter(tx: Tx, after: string | null): Promise<number> {
+  const [row] = await tx.query<{ n: number }>(`select count(*)::int as n from public.agent_profiles
+    where send_daily_digest and ($1::uuid is null or id > $1::uuid)`, [after]);
+  return row.n;
+}
+
 /** Service-only, one agent and one local day per atomic outbox transaction. */
 export async function createAgentDigest(tx: Tx, agentId: string, now: Date, siteOrigin: string, live: boolean, localHour?: number): Promise<string | null> {
   const profile = (await tx.query<{ timezone: string; recipient: string }>(`select timezone,

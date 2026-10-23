@@ -17,6 +17,7 @@ export const STOP_REASON_LABELS: Record<string, string> = {
   consultation_booked: "Consultation booked", won: "Won", lost: "Lost",
   unsubscribed: "Homeowner unsubscribed", repeat_inquiry: "New plan for a repeat inquiry",
   agent_stopped: "Stopped by you",
+  skipped: "Skipped by you",
 };
 export const planSchema = z.object({
   name: z.string().trim().min(1, "Give this plan a name.").max(80, "Use 80 characters or fewer."),

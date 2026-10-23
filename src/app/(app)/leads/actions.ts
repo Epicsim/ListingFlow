@@ -7,7 +7,7 @@ import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { recordAppointment, rescheduleAppointment, updateAppointmentStatus } from "@/lib/data/appointments";
 import { addNote, deleteLead, deleteNote, getContact, markContacted, updateLeadStatus } from "@/lib/data/leads";
 import { createFollowUpEmail } from "@/lib/data/outbox";
-import { createTask, deleteTask, setTaskCompleted, lockEmailTask, linkTaskEmail } from "@/lib/data/tasks";
+import { createTask, deleteTask, setTaskCompleted, lockEmailTask, linkTaskEmail, skipPlanTask } from "@/lib/data/tasks";
 import { PlanError, startPlan, stopPlan } from "@/lib/data/plans";
 import { getAppSecret } from "@/lib/config";
 import { asService, asUser } from "@/lib/db";
@@ -239,4 +239,14 @@ export async function stopPlanAction(_: ActionState, data: FormData): Promise<Ac
   await asUser(profile.id, (tx) => stopPlan(tx, profile.id, contact.data));
   refresh(contact.data);
   return success("Plan stopped. Its open steps are canceled.");
+}
+
+export async function skipPlanStepAction(_: ActionState, data: FormData): Promise<ActionState> {
+  const { profile } = await requireWorkspaceAgent();
+  const task = uuidSchema.safeParse(data.get("task_id"));
+  if (!task.success) return failure("This open plan step could not be found.");
+  const contactId = await asUser(profile.id, (tx) => skipPlanTask(tx, task.data));
+  if (!contactId) return failure("This step is done, canceled, still sending, or no longer available.");
+  refresh(contactId);
+  return success("Step skipped. The other open steps continue.");
 }

@@ -3,6 +3,14 @@ import { logAgentEvent } from "./activity";
 import type { TaskKind } from "@/lib/follow-up-plans";
 import type { EmailStatus } from "@/lib/domain";
 
+/** The database derives ownership from auth.uid(); no cancellation fields are writable by agents. */
+export async function skipPlanTask(tx: Tx, taskId: string): Promise<string | null> {
+  const [row] = await tx.query<{ contact_id: string | null }>(
+    `select public.skip_plan_task($1::uuid) as contact_id`, [taskId],
+  );
+  return row?.contact_id ?? null;
+}
+
 export async function lockEmailTask(tx: Tx, agentId: string, contactId: string, taskId: string): Promise<boolean> {
   const rows = await tx.query(`select t.id from public.follow_up_tasks t
     left join public.outbound_emails e on e.id = t.email_id and e.agent_id = t.agent_id

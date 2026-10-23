@@ -4,9 +4,10 @@ import { PlanForm, PlanStepForm } from "@/components/plan-forms";
 import { ActionForm, SubmitButton } from "@/components/ui/action-form";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader, PageHeader } from "@/components/ui/display";
+import { CheckboxField } from "@/components/ui/fields";
 import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { listCampaignOptions } from "@/lib/data/campaigns";
-import { getPlanSteps, listPlans } from "@/lib/data/plans";
+import { getPlan, getPlanSteps } from "@/lib/data/plans";
 import { getTemplates } from "@/lib/data/templates";
 import { asUser } from "@/lib/db";
 import { TASK_KIND_LABELS } from "@/lib/follow-up-plans";
@@ -18,8 +19,7 @@ export default async function EditPlanPage({ params }: PageProps<"/settings/foll
   const { id } = await params;
   if (!uuidSchema.safeParse(id).success) notFound();
   const { profile } = await requireWorkspaceAgent();
-  const { plans, steps, campaigns, templates } = await asUser(profile.id, async (tx) => ({ plans: await listPlans(tx, profile.id), steps: await getPlanSteps(tx, profile.id, id), campaigns: await listCampaignOptions(tx, profile.id), templates: await getTemplates(tx, profile.id) }));
-  const plan = plans.find((p) => p.id === id);
+  const { plan, steps, campaigns, templates } = await asUser(profile.id, async (tx) => ({ plan: await getPlan(tx, profile.id, id), steps: await getPlanSteps(tx, profile.id, id), campaigns: await listCampaignOptions(tx, profile.id), templates: await getTemplates(tx, profile.id) }));
   if (!plan) notFound();
   return <><PageHeader title={plan.name} description="Plans create reminders and drafts. Nothing is sent until you press Send." actions={<ButtonLink href="/settings/follow-up-plans" variant="secondary">All plans</ButtonLink>} /><SettingsTabs />
     <div className="max-w-3xl space-y-6"><Card><CardHeader title="Plan settings" /><div className="p-5"><PlanForm plan={plan} campaigns={campaigns} /></div></Card>
@@ -30,6 +30,8 @@ export default async function EditPlanPage({ params }: PageProps<"/settings/foll
         </details></li>)}</ol>
         {steps.length < 12 ? <div className="border-t border-line p-5"><h2 className="mb-4 font-semibold">Add a step</h2><PlanStepForm key={steps.map((s) => s.id).join(":")} planId={id} template={templates.follow_up} /></div> : null}
       </Card>
-      <Card><CardHeader title="Delete plan" description="Existing enrollments and their copied steps continue. This removes the plan from future use." /><ActionForm action={planOperationAction} className="p-5"><input type="hidden" name="plan_id" value={id} /><SubmitButton name="operation" value="delete" variant="danger" size="sm">Delete plan</SubmitButton></ActionForm></Card>
+      <Card><CardHeader title="Delete plan" description="Existing enrollments and their copied steps continue. This removes the plan from future use." /><ActionForm action={planOperationAction} className="space-y-4 p-5"><input type="hidden" name="plan_id" value={id} />
+        <CheckboxField name="confirm_delete" value="delete" required label="I understand this permanently deletes this plan and its configured steps." />
+        <SubmitButton name="operation" value="delete" variant="danger" size="sm">Delete plan</SubmitButton></ActionForm></Card>
     </div></>;
 }

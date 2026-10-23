@@ -19,11 +19,11 @@ import { describeEvent } from "@/lib/activity-text";
 import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { getLeadDetail } from "@/lib/data/leads";
 import { getTemplates } from "@/lib/data/templates";
-import { listEnrollments, listPlans } from "@/lib/data/plans";
+import { getPlanTemplateValues, listEnrollments, listPlans } from "@/lib/data/plans";
 import { asUser } from "@/lib/db";
 import { APPOINTMENT_STATUS_LABELS, CONTACT_METHOD_LABELS, EMAIL_KIND_LABELS, EMAIL_STATUS_LABELS, TIMELINE_LABELS } from "@/lib/domain";
 import { getEmailDeliveryConfig } from "@/lib/email/config";
-import { renderEmail, templateValuesFor } from "@/lib/email/messages";
+import { renderEmail } from "@/lib/email/messages";
 import { addDays, formatDate, formatDateTime, formatShortDate, zonedDate, zonedTime } from "@/lib/time";
 import { sourceLabel } from "@/lib/utm";
 import { uuidSchema } from "@/lib/validation";
@@ -88,7 +88,7 @@ export default async function LeadPage({ params, searchParams }: PageProps<"/lea
     && (!selectedEmail || selectedEmail.status === "failed") ? selectedTask : undefined;
   const draft = renderEmail(
     draftTask ? { subject: draftTask.email_subject ?? "", body: draftTask.email_body ?? "" } : templates.follow_up,
-    templateValuesFor(profile, { full_name: contact.full_name, property_address: latest?.property_address }, profile.booking_url),
+    await asUser(profile.id, (tx) => getPlanTemplateValues(tx, profile.id, contact, profile, { enrollmentId: draftTask?.enrollment_id })),
   );
   const openTasks = tasks.filter((t) => !t.enrollment_id && !t.completed_at && !t.canceled_at);
   const doneTasks = tasks.filter((t) => !t.enrollment_id && t.completed_at);

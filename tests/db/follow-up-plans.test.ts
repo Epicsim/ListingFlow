@@ -21,8 +21,9 @@ async function fixture(options: { steps?: PlanStepInput[]; text?: boolean; conse
   const agent = await createAgent(db);
   const campaign = await createCampaignFor(db, agent);
   const plan = await asAgent(db, agent, async (tx) => {
-    const id = await savePlan(tx, agent, { name: "Fictional plan", timelines: ["soon"], is_active: true, campaign_id: null });
+    const id = await savePlan(tx, agent, { name: "Fictional plan", timelines: ["soon"], is_active: false, campaign_id: null });
     for (const step of options.steps ?? [call, email(1), email(3), email(44)]) await savePlanStep(tx, agent, id, step);
+    await changePlan(tx, agent, id, "toggle");
     return id;
   });
   const res = await submit(db, campaign.slug, { inquiry: { timeline: "soon", preferred_contact: options.text ? "text" : "email", marketing_consent: options.consent ?? false } });
@@ -37,8 +38,9 @@ describe("plan matching and snapshots", () => {
   it("uses position first, including campaign-specific vs all-campaign plans; ignores off plans", async () => {
     const f = await fixture();
     const second = await asAgent(db, f.agent, async (tx) => {
-      const id = await savePlan(tx, f.agent, { name: "Specific plan", timelines: ["soon"], campaign_id: f.campaign.id, is_active: true });
+      const id = await savePlan(tx, f.agent, { name: "Specific plan", timelines: ["soon"], campaign_id: f.campaign.id, is_active: false });
       await savePlanStep(tx, f.agent, id, call);
+      await changePlan(tx, f.agent, id, "toggle");
       return id;
     });
     await start(f);
@@ -103,7 +105,7 @@ describe("plan matching and snapshots", () => {
     expect(await processInquirySubmission(publicDb, req)).toMatchObject({ ok: true, duplicate: true });
     const rows = await asAgent(db, f.agent, (tx) => tx.query(`select id from public.follow_up_enrollments where agent_id = $1::uuid`, [f.agent]));
     expect(rows).toHaveLength(1);
-    // An empty matching plan raises an error only in the post-commit step.
+    // An empty legacy plan is ignored without undoing the inquiry.
     await asAgent(db, f.agent, (tx) => tx.query(`delete from public.follow_up_plan_steps where plan_id = $1::uuid`, [f.plan]));
     const saved = await processInquirySubmission(publicDb, { ...req, fields: { ...req.fields, email: "other@example.test" } });
     expect(saved.ok).toBe(true);

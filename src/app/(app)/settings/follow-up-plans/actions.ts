@@ -45,6 +45,11 @@ export async function planOperationAction(_: ActionState, data: FormData): Promi
   } else {
     const id = uuidSchema.safeParse(data.get("plan_id"));
     if (!id.success) return failure("This plan could not be found.");
+    if (operation === "delete" && data.get("confirm_delete") !== "delete") {
+      return failure("Please confirm the permanent deletion.", {
+        confirm_delete: "Check the box to confirm you want to permanently delete this plan.",
+      });
+    }
     try {
       if (operation === "delete_step") {
         const step = uuidSchema.safeParse(data.get("step_id"));
