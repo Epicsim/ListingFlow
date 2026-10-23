@@ -13,13 +13,15 @@ import {
 } from "@/components/lead-forms";
 import { AppointmentStatusBadge, EmailStatusBadge, LeadStatusBadge } from "@/components/status-badges";
 import { Button } from "@/components/ui/button";
+import { LeadPlanCard } from "@/components/lead-plan-card";
 import { Badge, Card, CardHeader, DefinitionList, EmptyState, Notice, PageHeader } from "@/components/ui/display";
 import { describeEvent } from "@/lib/activity-text";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { getLeadDetail } from "@/lib/data/leads";
 import { getTemplates } from "@/lib/data/templates";
+import { listEnrollments, listPlans } from "@/lib/data/plans";
 import { asUser } from "@/lib/db";
-import { APPOINTMENT_STATUS_LABELS, CONTACT_METHOD_LABELS, EMAIL_KIND_LABELS, TIMELINE_LABELS } from "@/lib/domain";
+import { APPOINTMENT_STATUS_LABELS, CONTACT_METHOD_LABELS, EMAIL_KIND_LABELS, EMAIL_STATUS_LABELS, TIMELINE_LABELS } from "@/lib/domain";
 import { getEmailDeliveryConfig } from "@/lib/email/config";
 import { renderEmail, templateValuesFor } from "@/lib/email/messages";
 import { addDays, formatDate, formatDateTime, formatShortDate, zonedDate, zonedTime } from "@/lib/time";
@@ -60,28 +62,36 @@ function HiddenForm({
   );
 }
 
-export default async function LeadPage({ params }: PageProps<"/leads/[id]">) {
+export default async function LeadPage({ params, searchParams }: PageProps<"/leads/[id]">) {
   const { id } = await params;
   if (!uuidSchema.safeParse(id).success) notFound();
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const tz = profile.timezone;
   const now = new Date();
 
-  const { detail, templates } = await asUser(profile.id, async (tx) => ({
+  const { detail, templates, enrollments, plans } = await asUser(profile.id, async (tx) => ({
     detail: await getLeadDetail(tx, profile.id, id),
     templates: await getTemplates(tx, profile.id),
+    enrollments: await listEnrollments(tx, profile.id, id),
+    plans: await listPlans(tx, profile.id),
   }));
   if (!detail) notFound();
   const { contact, inquiries, consents, appointments, tasks, notes, emails, activity } = detail;
   const latest = inquiries[0];
   const today = zonedDate(now, tz);
   const email = getEmailDeliveryConfig();
+  const query = await searchParams;
+  const taskId = typeof query.task === "string" && uuidSchema.safeParse(query.task).success ? query.task : null;
+  const selectedTask = tasks.find((t) => t.id === taskId && t.kind === "email");
+  const selectedEmail = emails.find((e) => e.id === selectedTask?.email_id);
+  const draftTask = selectedTask && !selectedTask.completed_at && !selectedTask.canceled_at
+    && (!selectedEmail || selectedEmail.status === "failed") ? selectedTask : undefined;
   const draft = renderEmail(
-    templates.follow_up,
+    draftTask ? { subject: draftTask.email_subject ?? "", body: draftTask.email_body ?? "" } : templates.follow_up,
     templateValuesFor(profile, { full_name: contact.full_name, property_address: latest?.property_address }, profile.booking_url),
   );
-  const openTasks = tasks.filter((t) => !t.completed_at);
-  const doneTasks = tasks.filter((t) => t.completed_at);
+  const openTasks = tasks.filter((t) => !t.enrollment_id && !t.completed_at && !t.canceled_at);
+  const doneTasks = tasks.filter((t) => !t.enrollment_id && t.completed_at);
 
   return (
     <>
@@ -127,6 +137,7 @@ export default async function LeadPage({ params }: PageProps<"/leads/[id]">) {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px] [&>*]:min-w-0">
         <div className="min-w-0 space-y-6">
+          <LeadPlanCard enrollments={enrollments} plans={plans} tasks={tasks} emails={emails} contact={contact} timeZone={tz} />
           <Card>
             <CardHeader
               title="Consultations"
@@ -219,17 +230,29 @@ export default async function LeadPage({ params }: PageProps<"/leads/[id]">) {
             </ol>
           </Card>
 
-          <Card>
-            <CardHeader title="Follow-up email" description="Starts from your follow-up template – edit freely." />
+          <Card id="follow-up-email">
+            <CardHeader title={draftTask ? "Review plan draft" : "Follow-up email"} description={draftTask ? "Review this copied plan draft and edit freely before sending." : "Starts from your follow-up template – edit freely."} />
             <div className="p-5">
-              <FollowUpComposer
-                contactId={contact.id}
-                to={contact.email}
-                subject={draft.subject}
-                body={draft.body}
-                live={email.live}
-                deliveryExplanation={email.explanation}
-              />
+              {taskId && !draftTask ? <Notice tone="neutral">{selectedEmail
+                ? `This step's email status: ${EMAIL_STATUS_LABELS[selectedEmail.status]}.`
+                : "This draft step is no longer open. Its status is shown in the plan history."}</Notice> : null}
+              {contact.unsubscribed_at ? (
+                <Notice tone="warning" title="Unsubscribed from your emails">
+                  {contact.full_name} used the unsubscribe link on {formatDate(contact.unsubscribed_at, tz)}, so new
+                  emails can&rsquo;t be sent from here. Only contact them about something they ask you for.
+                </Notice>
+              ) : taskId && !draftTask ? null : (
+                <FollowUpComposer
+                  key={draftTask?.id ?? "manual"}
+                  taskId={draftTask?.id}
+                  contactId={contact.id}
+                  to={contact.email}
+                  subject={draft.subject}
+                  body={draft.body}
+                  live={email.live}
+                  deliveryExplanation={email.explanation}
+                />
+              )}
               {emails.length ? (
                 <div className="mt-6 border-t border-line pt-5">
                   <h3 className="mb-3 text-sm font-semibold">Emails for this lead</h3>

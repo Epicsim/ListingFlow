@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { brand } from "@/config/brand";
+import { CookieNotice } from "@/components/cookie-notice";
 import { ThemeSync } from "@/components/theme-control";
 import { themeInitScript } from "@/lib/theme";
 import "./globals.css";
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} h-full antialiased`}>
       <head><script dangerouslySetInnerHTML={{ __html: themeInitScript }} /></head>
-      <body className="min-h-full"><ThemeSync />{children}</body>
+      <body className="min-h-full"><ThemeSync />{children}<CookieNotice /></body>
     </html>
   );
 }

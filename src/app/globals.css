@@ -10,7 +10,7 @@
   --color-surface: #ffffff;
   --color-sunken: #edf1f7;
   --color-line: #e3e8f0;
-  --color-line-strong: #8694aa;
+  --color-line-strong: #77869d; /* 3:1 or better against every light surface */
   --color-ink: #172235;
   --color-ink-soft: #44526a;
   --color-ink-muted: #606e83;
@@ -75,7 +75,7 @@
     --color-surface: #fff;
     --color-sunken: #edf1f7;
     --color-line: #e3e8f0;
-    --color-line-strong: #8694aa;
+    --color-line-strong: #77869d; /* 3:1 or better against every light surface */
     --color-ink: #172235;
     --color-ink-soft: #44526a;
     --color-ink-muted: #606e83;

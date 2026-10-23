@@ -31,6 +31,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip static files, public landing pages and image assets.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|assets/|p/|privacy).*)"],
+  // Skip static files, public landing pages, legal pages and image assets.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|assets/|p/|privacy|terms|cookies|refunds|unsubscribe|api/stripe/webhook|api/cron/daily-digest).*)"],
 };

@@ -18,6 +18,7 @@ export interface AgentProfile {
   notification_email: string | null;
   notify_new_inquiry: boolean;
   send_acknowledgment: boolean;
+  send_daily_digest: boolean;
   timezone: string;
   created_at: Date;
   updated_at: Date;
@@ -26,7 +27,7 @@ export interface AgentProfile {
 const PROFILE_COLUMNS = `
   id, full_name, brokerage, license_number, contact_email, phone, headshot_asset_id, logo_asset_id,
   primary_color, service_areas, intro, booking_url, privacy_policy_url, notification_email,
-  notify_new_inquiry, send_acknowledgment, timezone, created_at, updated_at`;
+  notify_new_inquiry, send_acknowledgment, send_daily_digest, timezone, created_at, updated_at`;
 
 export async function getProfile(tx: Tx, agentId: string): Promise<AgentProfile | null> {
   const rows = await tx.query<AgentProfile>(
@@ -34,6 +35,15 @@ export async function getProfile(tx: Tx, agentId: string): Promise<AgentProfile 
     [agentId],
   );
   return rows[0] ?? null;
+}
+
+export async function updateDigestPreference(tx: Tx, agentId: string, enabled: boolean): Promise<void> {
+  await tx.query(`update public.agent_profiles set send_daily_digest = $2::boolean where id = $1::uuid`, [agentId, enabled]);
+}
+
+export async function updateNotificationPreferences(tx: Tx, agentId: string, prefs: { digest: boolean; inquiries: boolean; acknowledgment: boolean }): Promise<void> {
+  await tx.query(`update public.agent_profiles set send_daily_digest = $2::boolean,
+    notify_new_inquiry = $3::boolean, send_acknowledgment = $4::boolean where id = $1::uuid`, [agentId, prefs.digest, prefs.inquiries, prefs.acknowledgment]);
 }
 
 function profileParams(input: ProfileInput) {
@@ -120,4 +130,10 @@ export async function setProfileImage(
   await tx.query(`update public.agent_profiles set ${column} = $2::uuid where id = $1::uuid`, [agentId, assetId]);
   const old = prev[0]?.old;
   if (old && old !== assetId) await deleteAsset(tx, agentId, old);
+}
+
+/** Permanently deletes the signed-in agent's account; every agent-owned row cascades with it. */
+export async function deleteOwnAccount(tx: Tx): Promise<boolean> {
+  const rows = await tx.query<{ ok: boolean }>(`select public.delete_own_account() as ok`);
+  return rows[0]?.ok === true;
 }

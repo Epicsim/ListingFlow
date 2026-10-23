@@ -3,14 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { type ActionState, failure, success } from "@/lib/action-state";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { recordAppointment, rescheduleAppointment, updateAppointmentStatus } from "@/lib/data/appointments";
 import { addNote, deleteLead, deleteNote, getContact, markContacted, updateLeadStatus } from "@/lib/data/leads";
 import { createFollowUpEmail } from "@/lib/data/outbox";
-import { createTask, deleteTask, setTaskCompleted } from "@/lib/data/tasks";
+import { createTask, deleteTask, setTaskCompleted, lockEmailTask, linkTaskEmail } from "@/lib/data/tasks";
+import { PlanError, startPlan, stopPlan } from "@/lib/data/plans";
+import { getAppSecret } from "@/lib/config";
 import { asService, asUser } from "@/lib/db";
 import { getEmailDeliveryConfig } from "@/lib/email/config";
 import { deliverQueuedEmails } from "@/lib/email/deliver";
+import { unsubscribeUrl, withUnsubscribeLink } from "@/lib/email/unsubscribe";
+import { requestOrigin } from "@/lib/request-origin";
 import { zonedDateTimeToUtc } from "@/lib/time";
 import {
   appointmentSchema,
@@ -35,7 +39,7 @@ function refresh(contactId?: string | null) {
 const NOT_FOUND = "This lead could not be found.";
 
 export async function deleteLeadAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const id = uuidSchema.safeParse(formData.get("contact_id"));
   if (!id.success) return failure(NOT_FOUND);
   if (formData.get("confirm_delete") !== "delete") {
@@ -53,7 +57,7 @@ export async function deleteLeadAction(_: ActionState, formData: FormData): Prom
 }
 
 export async function updateStatusAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const parsed = leadStatusSchema.safeParse(formFields(formData, ["contact_id", "status", "outcome_note"]));
   if (!parsed.success) return failure("Please fix the highlighted fields.", toFieldErrors(parsed.error));
   const { contact_id, status, outcome_note } = parsed.data;
@@ -64,7 +68,7 @@ export async function updateStatusAction(_: ActionState, formData: FormData): Pr
 }
 
 export async function markContactedAction(formData: FormData): Promise<void> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const id = uuidSchema.safeParse(formData.get("contact_id"));
   if (!id.success) return;
   await asUser(profile.id, (tx) => markContacted(tx, profile.id, id.data));
@@ -72,7 +76,7 @@ export async function markContactedAction(formData: FormData): Promise<void> {
 }
 
 export async function addNoteAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const parsed = noteSchema.safeParse(formFields(formData, ["contact_id", "body"]));
   if (!parsed.success) return failure("Please fix the highlighted fields.", toFieldErrors(parsed.error));
   const ok = await asUser(profile.id, (tx) => addNote(tx, profile.id, parsed.data.contact_id, parsed.data.body));
@@ -82,7 +86,7 @@ export async function addNoteAction(_: ActionState, formData: FormData): Promise
 }
 
 export async function deleteNoteAction(formData: FormData): Promise<void> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const id = uuidSchema.safeParse(formData.get("note_id"));
   if (!id.success) return;
   const contactId = await asUser(profile.id, (tx) => deleteNote(tx, profile.id, id.data));
@@ -90,7 +94,7 @@ export async function deleteNoteAction(formData: FormData): Promise<void> {
 }
 
 export async function createTaskAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const parsed = taskSchema.safeParse(formFields(formData, ["contact_id", "title", "due_date", "due_time"]));
   if (!parsed.success) return failure("Please fix the highlighted fields.", toFieldErrors(parsed.error));
   const { contact_id, title, due_date, due_time } = parsed.data;
@@ -102,7 +106,7 @@ export async function createTaskAction(_: ActionState, formData: FormData): Prom
 }
 
 export async function toggleTaskAction(formData: FormData): Promise<void> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const id = uuidSchema.safeParse(formData.get("task_id"));
   if (!id.success) return;
   const completed = formData.get("completed") === "true";
@@ -111,7 +115,7 @@ export async function toggleTaskAction(formData: FormData): Promise<void> {
 }
 
 export async function deleteTaskAction(formData: FormData): Promise<void> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const id = uuidSchema.safeParse(formData.get("task_id"));
   if (!id.success) return;
   const contactId = await asUser(profile.id, (tx) => deleteTask(tx, profile.id, id.data));
@@ -119,7 +123,7 @@ export async function deleteTaskAction(formData: FormData): Promise<void> {
 }
 
 export async function recordAppointmentAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const parsed = appointmentSchema.safeParse(formFields(formData, ["contact_id", "inquiry_id", "date", "time", "notes"]));
   if (!parsed.success) return failure("Please fix the highlighted fields.", toFieldErrors(parsed.error));
   const { contact_id, inquiry_id, date, time, notes } = parsed.data;
@@ -134,7 +138,7 @@ export async function recordAppointmentAction(_: ActionState, formData: FormData
 }
 
 export async function appointmentStatusAction(formData: FormData): Promise<void> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const parsed = appointmentStatusSchema.safeParse(formFields(formData, ["appointment_id", "status"]));
   if (!parsed.success) return;
   const contactId = await asUser(profile.id, (tx) =>
@@ -145,7 +149,7 @@ export async function appointmentStatusAction(formData: FormData): Promise<void>
 }
 
 export async function rescheduleAppointmentAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const id = uuidSchema.safeParse(formData.get("appointment_id"));
   const date = localDateSchema.safeParse(formData.get("date"));
   const time = localTimeSchema.safeParse(formData.get("time"));
@@ -169,16 +173,23 @@ export async function rescheduleAppointmentAction(_: ActionState, formData: Form
  * labeled preview and nothing is sent.
  */
 export async function saveFollowUpEmailAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const parsed = followUpEmailSchema.safeParse(formFields(formData, ["contact_id", "subject", "body"]));
   if (!parsed.success) return failure("Please fix the highlighted fields.", toFieldErrors(parsed.error));
   const { contact_id, subject, body } = parsed.data;
+  const rawTask = formData.get("task_id");
+  const task = rawTask ? uuidSchema.safeParse(rawTask) : null;
+  if (task && !task.success) return failure("This draft step could not be found.");
+  const taskId = task?.success ? task.data : null;
   const config = getEmailDeliveryConfig();
+  const unsubscribe = unsubscribeUrl(await requestOrigin(), contact_id, await getAppSecret());
 
   const emailId = await asUser(profile.id, async (tx) => {
-    const contact = await getContact(tx, profile.id, contact_id);
+    const contact = await getContact(tx, profile.id, contact_id, true);
     if (!contact) return null;
-    return createFollowUpEmail(tx, {
+    if (contact.unsubscribed_at) return "unsubscribed" as const;
+    if (taskId && !await lockEmailTask(tx, profile.id, contact_id, taskId)) return "task_unavailable" as const;
+    const id = await createFollowUpEmail(tx, {
       agentId: profile.id,
       contactId: contact.id,
       inquiryId: null,
@@ -186,11 +197,15 @@ export async function saveFollowUpEmailAction(_: ActionState, formData: FormData
       to: contact.email,
       replyTo: profile.contact_email,
       subject,
-      body,
+      body: withUnsubscribeLink(body, unsubscribe),
       status: config.live ? "queued" : "preview",
     });
+    if (taskId) await linkTaskEmail(tx, profile.id, contact_id, taskId, id);
+    return id;
   });
   if (!emailId) return failure(NOT_FOUND);
+  if (emailId === "unsubscribed") return failure("This homeowner unsubscribed from your emails, so nothing was saved or sent.");
+  if (emailId === "task_unavailable") return failure("This draft step is completed, canceled, already queued, or no longer available. Refresh the lead before trying again.");
 
   if (!config.live) {
     refresh(contact_id);
@@ -203,4 +218,25 @@ export async function saveFollowUpEmailAction(_: ActionState, formData: FormData
   return result.sent === 1
     ? success("Sent. The email provider accepted the message.")
     : failure("The email provider didn't accept this message, so it was not sent. It's saved in your outbox as failed.");
+}
+
+export async function startPlanAction(_: ActionState, data: FormData): Promise<ActionState> {
+  const { profile } = await requireWorkspaceAgent();
+  const contact = uuidSchema.safeParse(data.get("contact_id"));
+  const plan = uuidSchema.safeParse(data.get("plan_id"));
+  if (!contact.success || !plan.success) return failure("Choose one of your plans.");
+  try {
+    const id = await asUser(profile.id, (tx) => startPlan(tx, profile.id, contact.data, plan.data));
+    if (!id) return failure("This plan cannot start. Check the lead's status and try again.");
+  } catch (e) { return failure(e instanceof PlanError ? e.message : "We couldn't start this plan. Please retry."); }
+  refresh(contact.data);
+  return success("Plan started. Its reminders and drafts are ready to review.");
+}
+export async function stopPlanAction(_: ActionState, data: FormData): Promise<ActionState> {
+  const { profile } = await requireWorkspaceAgent();
+  const contact = uuidSchema.safeParse(data.get("contact_id"));
+  if (!contact.success) return failure(NOT_FOUND);
+  await asUser(profile.id, (tx) => stopPlan(tx, profile.id, contact.data));
+  refresh(contact.data);
+  return success("Plan stopped. Its open steps are canceled.");
 }

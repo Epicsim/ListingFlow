@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmailStatusBadge } from "@/components/status-badges";
 import { Card, EmptyState, Notice, PageHeader } from "@/components/ui/display";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { listOutbox } from "@/lib/data/outbox";
 import { asUser } from "@/lib/db";
 import { EMAIL_KIND_LABELS } from "@/lib/domain";
@@ -13,7 +13,7 @@ import { formatDateTime } from "@/lib/time";
 export const metadata: Metadata = { title: "Outbox" };
 
 export default async function OutboxPage() {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const emails = await asUser(profile.id, (tx) => listOutbox(tx, profile.id));
   const config = getEmailDeliveryConfig();
   const tz = profile.timezone;

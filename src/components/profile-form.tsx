@@ -278,7 +278,7 @@ function ImageField({
         <div className={`${frame} flex shrink-0 items-center justify-center overflow-hidden border border-line bg-sunken`}>
           {shown ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={shown} alt="" className={`h-full w-full ${shape === "round" ? "object-cover" : "object-contain p-1"}`} />
+            <img src={shown} alt={`${label} preview`} className={`h-full w-full ${shape === "round" ? "object-cover" : "object-contain p-1"}`} />
           ) : (
             <ImageUp aria-hidden className="size-5 text-ink-muted" />
           )}

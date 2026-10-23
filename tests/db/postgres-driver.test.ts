@@ -7,14 +7,19 @@
 import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { getChannelReport } from "@/lib/data/channel-report";
 import { getLeadDetail, listLeads } from "@/lib/data/leads";
 import { getOverviewMetrics } from "@/lib/data/metrics";
 import { getProfile, insertAsset } from "@/lib/data/profiles";
 import { getPublicAsset } from "@/lib/data/public";
+import { addStarterPlans, listPlans, startPlan, listEnrollments } from "@/lib/data/plans";
+import { createAgentDigest } from "@/lib/data/digests";
+import { listOutbox } from "@/lib/data/outbox";
+import { STARTER_PLANS } from "@/lib/follow-up-plans";
 import { applyMigrations } from "@/lib/db/migrate";
 import { postgresDriver } from "@/lib/db/postgres-driver";
 import type { Driver } from "@/lib/db/types";
-import { asAgent, asAnon, createAgent, createCampaignFor, submit } from "../helpers/db";
+import { asAgent, asAnon, asService, createAgent, createCampaignFor, submit } from "../helpers/db";
 
 let server: PGLiteSocketServer;
 let pglite: PGlite;
@@ -37,6 +42,26 @@ afterAll(async () => {
 });
 
 describe("postgres.js driver (Supabase mode)", () => {
+  it("round trips plan arrays, skip snapshots and digest dates through the production driver", async () => {
+    const agent = await createAgent(db);
+    const campaign = await createCampaignFor(db, agent);
+    const res = await submit(db, campaign.slug);
+    if (res.status !== "created") throw new Error("fixture_failed");
+    await asAgent(db, agent, async (tx) => {
+      await addStarterPlans(tx, agent);
+      const plans = await listPlans(tx, agent);
+      const plan = plans.find((p) => p.name === STARTER_PLANS[1].name)!;
+      expect(plan.timelines).toEqual(["3_6_months"]);
+      await startPlan(tx, agent, res.contact_id, plan.id);
+      const e = (await listEnrollments(tx, agent, res.contact_id))[0];
+      expect(e.started_at).toBeInstanceOf(Date);
+      expect(e.skipped_steps).toHaveLength(3);
+    });
+    const now = new Date();
+    expect(await asService(db, (tx) => createAgentDigest(tx, agent, now, "https://app.example.test", false))).toBeTruthy();
+    expect(await asService(db, (tx) => createAgentDigest(tx, agent, now, "https://app.example.test", false))).toBeNull();
+    expect((await asAgent(db, agent, (tx) => listOutbox(tx, agent)))[0].status).toBe("preview");
+  });
   it("applies migrations idempotently", async () => {
     const again = await applyMigrations(db, { withLocalShim: true });
     expect(again.applied).toEqual([]);
@@ -60,6 +85,13 @@ describe("postgres.js driver (Supabase mode)", () => {
     );
     expect(metrics.new_inquiries).toBe(1);
     expect(typeof metrics.new_inquiries).toBe("number");
+
+    const channels = await asAgent(db, agent, (tx) =>
+      getChannelReport(tx, agent, { from: null, to: new Date(Date.now() + 60_000) }),
+    );
+    expect(channels).toEqual([
+      { channel: "instagram", utm_source_hint: null, inquiries: 1, homeowners: 1, booking_clicks: 0, consultations: 0, attended: 0, won: 0 },
+    ]);
 
     const detail = await asAgent(db, agent, (tx) => getLeadDetail(tx, agent, res.contact_id));
     expect(detail?.inquiries[0].source).toBe("instagram");

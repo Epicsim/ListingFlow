@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/settings", label: "Profile & branding" },
   { href: "/settings/templates", label: "Email templates" },
+  { href: "/settings/follow-up-plans", label: "Follow-up plans" },
+  { href: "/settings/billing", label: "Billing" },
   { href: "/settings/preferences", label: "Preferences" },
 ];
 
@@ -14,7 +16,7 @@ export function SettingsTabs() {
   return (
     <nav aria-label="Settings sections" className="mb-6 flex gap-1 overflow-x-auto border-b border-line">
       {TABS.map((t) => {
-        const active = pathname === t.href;
+        const active = pathname === t.href || (t.href !== "/settings" && pathname.startsWith(t.href + "/"));
         return (
           <Link
             key={t.href}

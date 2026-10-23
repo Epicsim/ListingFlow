@@ -4,7 +4,7 @@ import Link from "next/link";
 import { LeadStatusBadge } from "@/components/status-badges";
 import { ButtonLink } from "@/components/ui/button";
 import { Badge, Card, EmptyState, Notice, PageHeader } from "@/components/ui/display";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { listCampaignOptions } from "@/lib/data/campaigns";
 import { LEADS_PAGE_SIZE, type LeadFilters, listLeadSources, listLeads } from "@/lib/data/leads";
 import { asUser } from "@/lib/db";
@@ -21,7 +21,7 @@ function pick(v: string | string[] | undefined): string | undefined {
 }
 
 export default async function LeadsPage({ searchParams }: PageProps<"/leads">) {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const sp = await searchParams;
   const tz = profile.timezone;
   const now = new Date();

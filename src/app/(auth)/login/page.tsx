@@ -17,6 +17,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     <div className="rounded-2xl border border-line bg-surface p-6 shadow-card sm:p-8">
       <h1 className="font-display text-2xl font-semibold tracking-tight">Welcome back</h1>
       <p className="mt-1 mb-6 text-sm text-ink-muted">Sign in to see your inquiries and consultations.</p>
+      {params.account_deleted === "1" ? (
+        <Notice tone="accent" className="mb-4">
+          Your account and all of its data have been permanently deleted.
+        </Notice>
+      ) : null}
       {params.error === "link" ? (
         <Notice tone="warning" className="mb-4">
           That link has expired or could not be verified. Sign in, or{" "}

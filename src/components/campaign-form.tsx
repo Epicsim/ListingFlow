@@ -178,7 +178,7 @@ function HeroField({ currentUrl }: { currentUrl?: string | null }) {
         <div className="flex aspect-[16/9] w-full shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-sunken sm:w-56">
           {shown ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={shown} alt="" className="h-full w-full object-cover" />
+            <img src={shown} alt="Hero image preview" className="h-full w-full object-cover" />
           ) : (
             <ImageUp aria-hidden className="size-6 text-ink-muted" />
           )}

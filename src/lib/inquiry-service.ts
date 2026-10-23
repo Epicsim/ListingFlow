@@ -1,5 +1,6 @@
 import { insertEmail } from "@/lib/data/outbox";
 import { getProfile } from "@/lib/data/profiles";
+import { startMatchingPlan } from "@/lib/data/plans";
 import {
   getPublicCampaign,
   marketingConsentWording,
@@ -11,6 +12,7 @@ import {
 import { getTemplates } from "@/lib/data/templates";
 import type { Tx } from "@/lib/db/types";
 import { agentNotification, renderEmail, templateValuesFor } from "@/lib/email/messages";
+import { unsubscribeUrl, withUnsubscribeLink } from "@/lib/email/unsubscribe";
 import { rateLimitKey } from "@/lib/security/client-ip";
 import { checkFormToken, idempotencyKey } from "@/lib/security/form-token";
 import {
@@ -143,6 +145,11 @@ export async function processInquirySubmission(db: PublicDb, req: SubmissionRequ
     case "duplicate":
       return { ok: true, publicToken: result.public_token, duplicate: true, emailIdsToDeliver: [] };
     case "created": {
+      try {
+        await db.service((tx) => startMatchingPlan(tx, result.agent_id, result.contact_id, result.inquiry_id));
+      } catch (error) {
+        console.error(`[inquiry] plan_start_failed ${(error as { code?: string }).code ?? "plan_error"}`);
+      }
       const emailIds = await createSubmissionEmails(db, req, campaign, result, inquiry, attribution);
       return { ok: true, publicToken: result.public_token, duplicate: false, emailIdsToDeliver: emailIds };
     }
@@ -214,7 +221,7 @@ async function createSubmissionEmails(
             to: inquiry.email,
             replyTo: profile.contact_email,
             subject: message.subject,
-            body: message.body,
+            body: withUnsubscribeLink(message.body, unsubscribeUrl(req.siteOrigin, result.contact_id, req.secret)),
             status,
           }),
         );

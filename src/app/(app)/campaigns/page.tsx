@@ -5,7 +5,7 @@ import { CampaignStatusBadge } from "@/components/status-badges";
 import { ButtonLink } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Card, EmptyState, PageHeader } from "@/components/ui/display";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { listCampaignsWithStats } from "@/lib/data/campaigns";
 import { asUser } from "@/lib/db";
 import { requestOrigin } from "@/lib/request-origin";
@@ -15,7 +15,7 @@ import { buildCampaignUrl } from "@/lib/utm";
 export const metadata: Metadata = { title: "Campaigns" };
 
 export default async function CampaignsPage() {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const [campaigns, origin] = await Promise.all([
     asUser(profile.id, (tx) => listCampaignsWithStats(tx, profile.id)),
     requestOrigin(),

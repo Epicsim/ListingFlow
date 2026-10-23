@@ -4,14 +4,14 @@ import { deleteLeadAction } from "@/app/(app)/leads/actions";
 const agentId = "11111111-1111-4111-8111-111111111111";
 const contactId = "22222222-2222-4222-8222-222222222222";
 const mocks = vi.hoisted(() => ({
-  requireAgent: vi.fn(),
+  requireWorkspaceAgent: vi.fn(),
   asUser: vi.fn(),
   deleteLead: vi.fn(),
   revalidatePath: vi.fn(),
   redirect: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/session", () => ({ requireAgent: mocks.requireAgent }));
+vi.mock("@/lib/auth/session", () => ({ requireWorkspaceAgent: mocks.requireWorkspaceAgent }));
 vi.mock("@/lib/db", () => ({ asUser: mocks.asUser }));
 vi.mock("@/lib/data/leads", () => ({ deleteLead: mocks.deleteLead }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.requireAgent.mockResolvedValue({ profile: { id: agentId } });
+  mocks.requireWorkspaceAgent.mockResolvedValue({ profile: { id: agentId } });
   mocks.asUser.mockImplementation(async (_agentId, fn) => fn({}));
   mocks.deleteLead.mockResolvedValue(true);
   mocks.redirect.mockImplementation(() => { throw new Error("NEXT_REDIRECT"); });
@@ -49,7 +49,7 @@ describe("delete lead action", () => {
   });
 
   it("requires authentication before deleting", async () => {
-    mocks.requireAgent.mockRejectedValue(new Error("authentication_required"));
+    mocks.requireWorkspaceAgent.mockRejectedValue(new Error("authentication_required"));
     await expect(deleteLeadAction({ ok: false }, form())).rejects.toThrow("authentication_required");
     expect(mocks.asUser).not.toHaveBeenCalled();
     expect(mocks.deleteLead).not.toHaveBeenCalled();

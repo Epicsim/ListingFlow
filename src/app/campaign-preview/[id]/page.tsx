@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LandingPage } from "@/components/landing/landing-page";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { getCampaign } from "@/lib/data/campaigns";
 import { marketingConsentWording } from "@/lib/data/public";
 import { asUser } from "@/lib/db";
@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: "Preview", robots: { index: false, fo
 export default async function CampaignPreviewPage({ params }: PageProps<"/campaign-preview/[id]">) {
   const { id } = await params;
   if (!uuidSchema.safeParse(id).success) notFound();
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const campaign = await asUser(profile.id, (tx) => getCampaign(tx, profile.id, id));
   if (!campaign) notFound();
 

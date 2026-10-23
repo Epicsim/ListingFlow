@@ -33,9 +33,9 @@ export function useFormPending(): boolean {
 /**
  * Form wrapper for server actions that return an ActionState.
  *
- * Submitting through onSubmit (instead of the `action` prop) keeps what the
- * user typed when the server returns validation errors; React would otherwise
- * reset the form after every submission.
+ * The action prop provides native form submission without JavaScript. Once
+ * hydrated, onSubmit preserves typed values on validation errors instead of
+ * letting React reset the form after every submission.
  */
 export function ActionForm({
   action,
@@ -61,6 +61,7 @@ export function ActionForm({
     <FormContext value={{ errors: state.fieldErrors ?? {}, pending }}>
       <form
         ref={formRef}
+        action={dispatch}
         noValidate
         className={className}
         onSubmit={(event) => {

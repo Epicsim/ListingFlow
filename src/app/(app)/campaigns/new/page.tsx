@@ -2,7 +2,7 @@ import { Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import { CampaignForm } from "@/components/campaign-form";
 import { Notice, PageHeader } from "@/components/ui/display";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { STARTER_CAMPAIGN } from "@/lib/domain";
 import { requestOrigin } from "@/lib/request-origin";
 import { suggestCampaignSlug } from "@/lib/slug";
@@ -11,7 +11,7 @@ import { createCampaignAction } from "../actions";
 export const metadata: Metadata = { title: "New campaign" };
 
 export default async function NewCampaignPage({ searchParams }: PageProps<"/campaigns/new">) {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const welcome = (await searchParams).welcome === "1";
   const origin = await requestOrigin();
 

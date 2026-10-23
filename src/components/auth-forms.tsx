@@ -8,7 +8,7 @@ import {
   updatePasswordAction,
 } from "@/app/(auth)/actions";
 import { ActionForm, SubmitButton } from "./ui/action-form";
-import { TextField } from "./ui/fields";
+import { CheckboxField, TextField } from "./ui/fields";
 
 export function SignInForm({ next }: { next?: string }) {
   return (
@@ -39,6 +39,23 @@ export function SignUpForm() {
         autoComplete="new-password"
         hint="At least 8 characters."
         required
+      />
+      <CheckboxField
+        name="accept_terms"
+        required
+        label={
+          <>
+            I agree to the{" "}
+            <Link href="/terms" target="_blank" className="font-medium text-accent-ink underline underline-offset-4">
+              Terms of Service
+            </Link>{" "}
+            and have read the{" "}
+            <Link href="/privacy" target="_blank" className="font-medium text-accent-ink underline underline-offset-4">
+              Privacy Policy
+            </Link>
+            .
+          </>
+        }
       />
       <SubmitButton className="w-full" size="lg" pendingLabel="Creating account…">
         Create account

@@ -243,8 +243,8 @@ export function InquiryForm({
         <p id="inquiry-reassurance" className="flex gap-2 text-[13px] leading-relaxed text-ink-muted">
           <Lock aria-hidden className="mt-0.5 size-3.5 shrink-0" />
           <span>
-            Your details go only to {agentName}, who will personally prepare your estimate and reach out the way you
-            prefer. Submitting doesn&rsquo;t sign you up for marketing. See the{" "}
+            Your details are shared only with {agentName}, who will personally prepare your estimate and reach out the
+            way you prefer. Submitting doesn&rsquo;t sign you up for marketing. See the{" "}
             <a href={privacyHref} className="underline underline-offset-2 hover:text-ink">
               privacy notice
             </a>

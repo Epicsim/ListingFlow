@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 import * as z from "zod";
+import { legalUpdated } from "@/config/brand";
 import { type ActionState, failure, success } from "@/lib/action-state";
-import { localSignIn, localSignOut, localSignUp } from "@/lib/auth/local";
-import { getSessionUser } from "@/lib/auth/session";
+import { localSignIn, localSignUp } from "@/lib/auth/local";
+import { endSession, getSessionUser } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/auth/supabase";
 import { getBackend } from "@/lib/config";
 import { requestOrigin, safeNextPath } from "@/lib/request-origin";
@@ -20,7 +21,11 @@ const newPassword = z
   .min(8, { error: "Use at least 8 characters." })
   .max(200, { error: "Use at most 200 characters." });
 
-const signUpSchema = z.object({ email: emailField, password: newPassword });
+const signUpSchema = z.object({
+  email: emailField,
+  password: newPassword,
+  accept_terms: z.literal("on", { error: "Please accept the Terms of Service to create an account." }),
+});
 const signInSchema = z.object({
   email: emailField,
   password: z.string().min(1, { error: "Enter your password." }).max(200),
@@ -34,7 +39,11 @@ const resetPasswordSchema = z.object({
 });
 
 export async function signUpAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const parsed = signUpSchema.safeParse({ email: formData.get("email"), password: formData.get("password") });
+  const parsed = signUpSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    accept_terms: formData.get("accept_terms"),
+  });
   if (!parsed.success) return failure("Please fix the highlighted fields.", toFieldErrors(parsed.error));
   const { email, password } = parsed.data;
 
@@ -49,7 +58,10 @@ export async function signUpAction(_: ActionState, formData: FormData): Promise<
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: `${origin}/auth/callback?next=/onboarding` },
+    options: {
+      emailRedirectTo: `${origin}/auth/callback?next=/onboarding`,
+      data: { terms_accepted_at: new Date().toISOString(), terms_version: legalUpdated.iso },
+    },
   });
   if (error) {
     return failure(
@@ -87,12 +99,7 @@ export async function signInAction(_: ActionState, formData: FormData): Promise<
 }
 
 export async function signOutAction(): Promise<void> {
-  if (getBackend() === "local") {
-    await localSignOut();
-  } else {
-    const supabase = await createSupabaseServerClient();
-    await supabase.auth.signOut();
-  }
+  await endSession();
   redirect("/login");
 }
 

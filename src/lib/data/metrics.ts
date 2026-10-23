@@ -38,7 +38,7 @@ export async function getOverviewMetrics(
          where c.agent_id = $1::uuid
            and (c.status = 'new' or exists (
              select 1 from public.follow_up_tasks t
-             where t.contact_id = c.id and t.completed_at is null and t.due_at <= $4::timestamptz))) as awaiting_follow_up,
+             where t.contact_id = c.id and t.completed_at is null and t.canceled_at is null and t.due_at <= $4::timestamptz))) as awaiting_follow_up,
        (select count(*)::int from public.appointments a, bounds
          where a.agent_id = $1::uuid and a.status <> 'canceled'
            and a.created_at >= bounds.f and a.created_at < bounds.t) as consultations_booked,

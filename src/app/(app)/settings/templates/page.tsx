@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { TemplateEditor } from "@/components/template-editor";
 import { Badge, Card, CardHeader, PageHeader } from "@/components/ui/display";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { getTemplates } from "@/lib/data/templates";
 import { asUser } from "@/lib/db";
 import { TEMPLATE_KINDS } from "@/lib/domain";
@@ -12,7 +12,7 @@ import { SettingsTabs } from "../settings-tabs";
 export const metadata: Metadata = { title: "Email templates" };
 
 export default async function TemplatesPage() {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const templates = await asUser(profile.id, (tx) => getTemplates(tx, profile.id));
   const sample = templateValuesFor(
     profile,

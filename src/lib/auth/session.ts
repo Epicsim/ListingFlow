@@ -2,9 +2,11 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { getBackend } from "@/lib/config";
+import { requiresLiveSubscription } from "@/lib/billing/access-mode";
+import { hasPaidSubscription } from "@/lib/data/billing";
 import { type AgentProfile, getProfile } from "@/lib/data/profiles";
 import { asUser } from "@/lib/db";
-import { localGetUser } from "./local";
+import { localGetUser, localSignOut } from "./local";
 import { createSupabaseServerClient } from "./supabase";
 
 export interface SessionUser {
@@ -20,6 +22,12 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   if (error || !data.user) return null;
   return { id: data.user.id, email: data.user.email ?? "" };
 });
+
+/** Signs the current browser out (local session cookie or Supabase session). */
+export async function endSession(): Promise<void> {
+  if (getBackend() === "local") await localSignOut();
+  else await (await createSupabaseServerClient()).auth.signOut();
+}
 
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSessionUser();
@@ -39,4 +47,13 @@ export async function requireAgent(): Promise<{ user: SessionUser; profile: Agen
 
 export async function getOptionalProfile(userId: string): Promise<AgentProfile | null> {
   return getProfileForUser(userId);
+}
+
+const paidAccess = cache(async (agentId: string) => asUser(agentId, (tx) => hasPaidSubscription(tx, agentId)));
+
+/** Paid features are gated in pages AND actions; billing/settings remain accessible. */
+export async function requireWorkspaceAgent(): Promise<{ user: SessionUser; profile: AgentProfile }> {
+  const agent = await requireAgent();
+  if (requiresLiveSubscription() && !await paidAccess(agent.user.id)) redirect("/settings/billing?subscription_required=1");
+  return agent;
 }

@@ -1,70 +1,28 @@
-import { Activity, ArrowRight, BellRing, CalendarCheck, CalendarClock, Check, Circle, MessageSquare, Plus, Users, type LucideIcon } from "lucide-react";
+import { Activity, ArrowRight, BellRing, CalendarCheck, CalendarClock, MessageSquare, Plus, Users } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
-import type { ReactNode } from "react";
+import {
+  ActivityFeed,
+  BookingClicksStat,
+  ConsultationList,
+  FollowUpList,
+  GettingStarted,
+  StatCard,
+} from "@/components/overview";
 import { RangeFilter } from "@/components/range-filter";
 import { ButtonLink } from "@/components/ui/button";
-import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui/display";
-import { describeEvent } from "@/lib/activity-text";
-import { requireAgent } from "@/lib/auth/session";
+import { Card, CardHeader, EmptyState, PageHeader } from "@/components/ui/display";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { listRecentActivity } from "@/lib/data/activity";
 import { listScheduledAppointments } from "@/lib/data/appointments";
 import { getOverviewMetrics } from "@/lib/data/metrics";
 import { listDueTasks } from "@/lib/data/tasks";
 import { resolveRange } from "@/lib/date-range";
 import { asUser } from "@/lib/db";
-import { formatDateTime, formatShortDate, formatTime, zonedDate } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Overview" };
 
-function Stat({
-  label,
-  value,
-  hint,
-  href,
-  icon: Icon,
-}: {
-  label: string;
-  value: number;
-  hint: string;
-  href?: string;
-  icon: LucideIcon;
-}) {
-  return (
-    <div className={`relative rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-5 xl:p-6 ${href ? "transition-colors hover:bg-sunken/40" : ""}`}>
-      <dt className="mb-5 flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-ink-soft sm:text-sm">{label}</span>
-        <span className="hidden size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-ink sm:flex"><Icon aria-hidden strokeWidth={1.7} className="size-[18px]" /></span>
-      </dt>
-      <dd><span className="text-[36px] leading-none font-semibold tracking-[-0.05em] tabular-nums">{value}</span><span className="mt-3 block text-xs leading-relaxed text-ink-muted">{hint}</span></dd>
-      {href ? (
-        <Link href={href} className="absolute inset-0 rounded-2xl"><span className="sr-only">View {label.toLowerCase()}</span></Link>
-      ) : null}
-    </div>
-  );
-}
-
-function ChecklistItem({ done, children, action }: { done: boolean; children: ReactNode; action?: ReactNode }) {
-  return (
-    <li className="flex items-center justify-between gap-3 py-3">
-      <span className={`flex items-center gap-3 text-sm ${done ? "text-ink-muted line-through" : "text-ink"}`}>
-        {done ? (
-          <Check aria-hidden className="size-5 rounded-full bg-accent p-0.5 text-white" />
-        ) : (
-          <Circle aria-hidden className="size-5 text-line-strong" />
-        )}
-        <span>
-          {children}
-          <span className="sr-only">{done ? " (done)" : " (to do)"}</span>
-        </span>
-      </span>
-      {!done && action ? action : null}
-    </li>
-  );
-}
-
 export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const params = await searchParams;
   const tz = profile.timezone;
   const now = new Date();
@@ -86,160 +44,140 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   }));
 
   const firstName = profile.full_name.split(/\s+/)[0];
-  const today = zonedDate(now, tz);
+  const todayLabel = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric" }).format(now);
   const gettingStarted = metrics.published_campaigns === 0 || metrics.total_leads === 0;
 
   return (
     <>
       <PageHeader
+        eyebrow={todayLabel}
         title="Overview"
         description={`Welcome back, ${firstName}. Here’s what’s happening with your business.`}
-        actions={<ButtonLink href="/campaigns/new"><Plus aria-hidden className="size-4" />Create campaign</ButtonLink>}
+        actions={
+          <ButtonLink href="/campaigns/new">
+            <Plus aria-hidden className="size-4" />
+            Create campaign
+          </ButtonLink>
+        }
       />
 
       {gettingStarted ? (
-        <Card className="mb-6">
-          <CardHeader
-            title="Get your first inquiry"
-            description="Your page converts visitors you send to it – share it where people already find you."
-          />
-          <ul className="divide-y divide-line px-5">
-            <ChecklistItem done>Set up your profile</ChecklistItem>
-            <ChecklistItem
-              done={metrics.total_campaigns > 0}
-              action={<ButtonLink href="/campaigns/new" size="sm">Create a page</ButtonLink>}
-            >
-              Create a seller page
-            </ChecklistItem>
-            <ChecklistItem
-              done={metrics.published_campaigns > 0}
-              action={<ButtonLink href="/campaigns" size="sm" variant="secondary">Publish</ButtonLink>}
-            >
-              Publish it
-            </ChecklistItem>
-            <ChecklistItem
-              done={metrics.total_leads > 0}
-              action={
+        <GettingStarted
+          steps={[
+            { label: "Set up your profile", done: true },
+            {
+              label: "Create a seller page",
+              done: metrics.total_campaigns > 0,
+              action: <ButtonLink href="/campaigns/new" size="sm">Create a page</ButtonLink>,
+            },
+            {
+              label: "Publish it",
+              done: metrics.published_campaigns > 0,
+              action: <ButtonLink href="/campaigns" size="sm" variant="secondary">Publish</ButtonLink>,
+            },
+            {
+              label: "Share the link on Instagram, your website or ads",
+              done: metrics.total_leads > 0,
+              action:
                 metrics.published_campaigns > 0 ? (
                   <ButtonLink href="/campaigns" size="sm" variant="secondary">Get links</ButtonLink>
-                ) : undefined
-              }
-            >
-              Share the link on Instagram, your website or ads
-            </ChecklistItem>
-          </ul>
-        </Card>
+                ) : undefined,
+            },
+          ]}
+        />
       ) : null}
 
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div><h2 className="text-sm font-semibold">Performance at a glance</h2><p className="mt-1 text-xs text-ink-muted">{range.label} · {tz.replace(/_/g, " ")}</p></div>
-        <RangeFilter range={range} />
-      </div>
-      <dl className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <Stat icon={MessageSquare} label="New inquiries" value={metrics.new_inquiries} hint={`${metrics.new_leads} new lead${metrics.new_leads === 1 ? "" : "s"}`} href="/leads" />
-        <Stat
-          icon={Users}
-          label="Awaiting follow-up"
-          value={metrics.awaiting_follow_up}
-          hint="Right now: new or follow-up due"
-          href="/leads?view=needs_follow_up"
-        />
-        <Stat icon={CalendarClock} label="Consultations booked" value={metrics.consultations_booked} hint="Recorded by you, excl. canceled" />
-        <Stat icon={CalendarCheck} label="Consultations attended" value={metrics.consultations_attended} hint="Marked attended" />
-      </dl>
-      <p className="mt-4 text-xs leading-relaxed text-ink-muted">
-        Booking-link clicks: <span className="font-medium text-ink tabular-nums">{metrics.booking_clicks}</span>{" "}
-        <span className="text-xs">– homeowners who opened your scheduler. These aren&rsquo;t confirmed appointments.</span>
-      </p>
+      <section aria-labelledby="performance-heading">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+          <div>
+            <h2 id="performance-heading" className="text-[15px] font-semibold tracking-tight text-ink">
+              Performance at a glance
+            </h2>
+            <p className="mt-0.5 text-[13px] text-ink-muted">
+              {range.label} · {tz.replace(/_/g, " ")}
+            </p>
+          </div>
+          <RangeFilter range={range} />
+        </div>
+        <dl className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4 [&>*]:min-w-0">
+          <StatCard
+            icon={MessageSquare}
+            label="New inquiries"
+            value={metrics.new_inquiries}
+            hint={`${metrics.new_leads} new lead${metrics.new_leads === 1 ? "" : "s"}`}
+            href="/leads"
+            linkLabel="View leads"
+          />
+          <StatCard
+            icon={Users}
+            label="Awaiting follow-up"
+            value={metrics.awaiting_follow_up}
+            hint="Right now: new or follow-up due"
+            href="/leads?view=needs_follow_up"
+            linkLabel="View leads awaiting follow-up"
+            attention={metrics.awaiting_follow_up > 0}
+          />
+          <StatCard
+            icon={CalendarClock}
+            label="Consultations booked"
+            value={metrics.consultations_booked}
+            hint="Recorded by you, excl. canceled"
+          />
+          <StatCard
+            icon={CalendarCheck}
+            label="Consultations attended"
+            value={metrics.consultations_attended}
+            hint="Marked attended"
+          />
+          <BookingClicksStat value={metrics.booking_clicks} />
+        </dl>
+      </section>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader
             title="Follow-ups due"
             description="Overdue and next 7 days"
-            action={<ButtonLink href="/leads?view=needs_follow_up" size="sm" variant="ghost">All <ArrowRight aria-hidden className="size-4" /></ButtonLink>}
+            action={
+              <ButtonLink href="/leads?view=needs_follow_up" size="sm" variant="ghost">
+                View all <ArrowRight aria-hidden className="size-4" />
+              </ButtonLink>
+            }
           />
           {tasks.length === 0 ? (
             <EmptyState compact icon={<BellRing />} title="Nothing due">
               Reminders you add on a lead&rsquo;s page show up here.
             </EmptyState>
           ) : (
-            <ul className="divide-y divide-line">
-              {tasks.map((t) => {
-                const overdue = new Date(t.due_at) < now;
-                const dueToday = zonedDate(new Date(t.due_at), tz) === today;
-                return (
-                  <li key={t.id}>
-                    <Link href={`/leads/${t.contact_id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-sunken/30">
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">{t.contact_name}</span>
-                        <span className="block truncate text-sm text-ink-muted">{t.title}</span>
-                      </span>
-                      {overdue && !dueToday ? (
-                        <Badge tone="danger">Overdue · {formatShortDate(t.due_at, tz)}</Badge>
-                      ) : dueToday ? (
-                        <Badge tone="warning">Today · {formatTime(t.due_at, tz)}</Badge>
-                      ) : (
-                        <Badge>{formatShortDate(t.due_at, tz)}</Badge>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+            <FollowUpList tasks={tasks} now={now} timeZone={tz} />
           )}
         </Card>
 
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader title="Scheduled consultations" description="Upcoming, and past ones waiting for an outcome" />
           {appointments.length === 0 ? (
             <EmptyState compact icon={<CalendarClock />} title="No consultations scheduled">
               When a homeowner books with you, record it on their lead page so it&rsquo;s counted here.
             </EmptyState>
           ) : (
-            <ul className="divide-y divide-line">
-              {appointments.map((a) => {
-                const past = new Date(a.scheduled_at) < now;
-                return (
-                  <li key={a.id}>
-                    <Link href={`/leads/${a.contact_id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-sunken/30">
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">{a.contact_name}</span>
-                        <span className="block text-sm text-ink-muted">{formatDateTime(a.scheduled_at, tz)}</span>
-                      </span>
-                      {past ? <Badge tone="warning">Record outcome</Badge> : <Badge tone="info">Upcoming</Badge>}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+            <>
+              <ConsultationList appointments={appointments} now={now} timeZone={tz} />
+              <p className="mt-auto border-t border-line px-5 py-3 text-xs text-ink-muted sm:px-6">
+                Bookings made in your scheduler aren&rsquo;t imported automatically – record them on the lead&rsquo;s page.
+              </p>
+            </>
           )}
         </Card>
       </div>
 
       <Card className="mt-6">
-        <CardHeader title="Recent activity" />
+        <CardHeader title="Recent activity" description="New requests, booking-link clicks and your updates" />
         {activity.length === 0 ? (
           <EmptyState compact icon={<Activity />} title="No activity yet">
             New inquiries, booking-link clicks and your updates will appear here.
           </EmptyState>
         ) : (
-          <ol className="divide-y divide-line">
-            {activity.map((e) => (
-              <li key={e.id} className="flex flex-col gap-0.5 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                {e.contact_id ? (
-                  <Link href={`/leads/${e.contact_id}`} className="min-w-0 text-sm text-ink hover:underline">
-                    {describeEvent(e, tz, true)}
-                  </Link>
-                ) : (
-                  <span className="min-w-0 text-sm text-ink">{describeEvent(e, tz, true)}</span>
-                )}
-                <time dateTime={new Date(e.created_at).toISOString()} className="shrink-0 text-xs text-ink-muted">
-                  {formatDateTime(e.created_at, tz)}
-                </time>
-              </li>
-            ))}
-          </ol>
+          <ActivityFeed events={activity} now={now} timeZone={tz} />
         )}
       </Card>
     </>

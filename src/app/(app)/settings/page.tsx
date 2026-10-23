@@ -82,8 +82,8 @@ export default async function SettingsPage() {
                 <div>
                   <p className="font-medium">Automated email sequences: off</p>
                   <p className="mt-0.5 text-ink-muted">
-                    Scheduled marketing emails stay disabled until sender setup, consent and unsubscribe handling are in
-                    place. Send follow-ups one at a time from a lead&rsquo;s page.
+                    Scheduled marketing emails stay disabled until sender setup and background sending are in place.
+                    Send follow-ups one at a time from a lead&rsquo;s page; each includes an unsubscribe link.
                   </p>
                 </div>
               </li>

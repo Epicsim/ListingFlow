@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Inbox, LayoutDashboard, Megaphone, Settings, Users } from "lucide-react";
+import { ChartNoAxesColumn, ChevronRight, Inbox, LayoutDashboard, Megaphone, Settings, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -8,6 +8,7 @@ const ITEMS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/campaigns", label: "Campaigns", icon: Megaphone },
+  { href: "/reports", label: "Reports", icon: ChartNoAxesColumn },
   { href: "/outbox", label: "Outbox", icon: Inbox },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;

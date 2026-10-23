@@ -1,6 +1,13 @@
 import type { Tx } from "@/lib/db/types";
 import type { AttributionInput, InquiryInput } from "@/lib/validation";
 import { normalizeSource } from "@/lib/utm";
+import { requiresLiveSubscription } from "@/lib/billing/access-mode";
+
+async function campaignMayRun(tx: Tx, slug: string): Promise<boolean> {
+  if (!requiresLiveSubscription()) return true;
+  const rows = await tx.query<{ allowed: boolean }>(`select public.campaign_has_paid_access($1::text) as allowed`, [slug]);
+  return rows[0].allowed;
+}
 
 /** Everything a published landing page shows. No private fields. */
 export interface PublicCampaign {
@@ -28,6 +35,7 @@ export interface PublicCampaign {
 /** Callable as `anon`: returns a published campaign or null. */
 export async function getPublicCampaign(tx: Tx, slug: string): Promise<PublicCampaign | null> {
   if (!/^[a-z0-9-]{3,80}$/.test(slug)) return null;
+  if (!await campaignMayRun(tx, slug)) return null;
   const rows = await tx.query<PublicCampaign>(`select * from public.get_public_campaign($1::text)`, [slug]);
   return rows[0] ?? null;
 }
@@ -86,6 +94,7 @@ export function normalizedSubmission(inquiry: InquiryInput, attribution: Partial
 
 /** Callable as `service_role` only (enforced by the database). */
 export async function submitInquiry(tx: Tx, args: SubmitArgs): Promise<SubmitResult> {
+  if (!await campaignMayRun(tx, args.slug)) return { status: "campaign_unavailable" };
   const payload = {
     full_name: args.inquiry.full_name,
     email: args.inquiry.email,
@@ -120,11 +129,21 @@ export async function submitInquiry(tx: Tx, args: SubmitArgs): Promise<SubmitRes
 
 /** Records a booking-link click and returns the URL to redirect to, or null. */
 export async function recordBookingClick(tx: Tx, slug: string, publicToken: string | null): Promise<string | null> {
+  if (!await campaignMayRun(tx, slug)) return null;
   const rows = await tx.query<{ url: string | null }>(
     `select public.record_booking_click($1::text, $2::uuid) as url`,
     [slug, publicToken],
   );
   return rows[0]?.url ?? null;
+}
+
+/**
+ * Service role, after the signed unsubscribe link was verified. Stops further
+ * emails to the contact; true while the contact still exists.
+ */
+export async function unsubscribeContact(tx: Tx, contactId: string): Promise<boolean> {
+  const rows = await tx.query<{ ok: boolean }>(`select public.unsubscribe_contact($1::uuid) as ok`, [contactId]);
+  return rows[0]?.ok === true;
 }
 
 /** Exact consent wording shown beside the checkbox; stored verbatim when ticked. */

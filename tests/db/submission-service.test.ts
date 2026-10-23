@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { listOutbox } from "@/lib/data/outbox";
 import type { Driver } from "@/lib/db/types";
 import { deliverQueuedEmails } from "@/lib/email/deliver";
+import { readUnsubscribeToken } from "@/lib/email/unsubscribe";
 import { type PublicDb, processInquirySubmission, type SubmissionRequest } from "@/lib/inquiry-service";
 import { issueFormToken } from "@/lib/security/form-token";
 import { asAgent, asAnon, asOwner, asService, createAgent, createCampaignFor, createTestDb } from "../helpers/db";
@@ -186,9 +187,14 @@ describe("submission emails", () => {
     expect(ack.body_text).toContain("42 Sample Road");
     expect(ack.body_text).toContain("https://scheduler.example.test/agent");
     expect(ack.sent_at).toBeNull();
+    // The homeowner's email ends with a working unsubscribe link for this contact.
+    const link = /Unsubscribe: (\S+)$/.exec(ack.body_text)?.[1] ?? "";
+    expect(link.startsWith("https://app.example.test/unsubscribe?t=")).toBe(true);
+    expect(readUnsubscribeToken(new URL(link).searchParams.get("t"), SECRET)).toBe(ack.contact_id);
 
     const alert = outbox.find((e) => e.kind === "agent_notification")!;
     expect(alert.body_text).toContain("https://app.example.test/leads/");
+    expect(alert.body_text).not.toContain("/unsubscribe");
   });
 
   it("are handed to the provider only when live, and record the real result", async () => {

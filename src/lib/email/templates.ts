@@ -20,7 +20,7 @@ export const DEFAULT_TEMPLATES: Record<TemplateKind, { label: string; descriptio
   acknowledgment: {
     label: "Acknowledgment",
     description:
-      "Sent to the homeowner right after they submit a request (when email delivery is set up and this is turned on in Settings).",
+      "Sent to the homeowner right after they submit a request (when email delivery is set up and this is turned on in Settings). An unsubscribe link is added at the end.",
     subject: "Thanks, {{first_name}} – I received your request",
     body: `Hi {{first_name}},
 
@@ -34,7 +34,8 @@ I'll be in touch soon. If you'd like to talk sooner, you can pick a time here: {
   },
   follow_up: {
     label: "Follow-up",
-    description: "Starting point when you write a follow-up from a lead's page. You can edit it before sending.",
+    description:
+      "Starting point when you write a follow-up from a lead's page. You can edit it before sending. An unsubscribe link is added at the end.",
     subject: "Following up on {{property_address}}",
     body: `Hi {{first_name}},
 

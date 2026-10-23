@@ -75,7 +75,7 @@ export function MarketingWorkspace() {
           <div className="lfm-workspaceMain">
             <div className="lfm-workspaceTitle"><div><span>A little clarity goes a long way.</span><h2>Your next move, in focus.</h2></div><span className="lfm-previewAction"><Plus aria-hidden size={15} /> Your next campaign</span></div>
             <div className="lfm-workspaceStats">
-              {[{ icon: MessageSquare, label: "Seller inquiries", text: "A warm welcome starts here" }, { icon: Clock3, label: "Follow-up reminders", text: "Keep the next step in sight" }, { icon: CalendarCheck, label: "Consultations", text: "Make every conversation count" }].map(({ icon: Icon, label, text }) => <div key={label}><Icon aria-hidden size={19} /><strong>{label}</strong><span>{text}</span></div>)}
+              {[{ icon: MessageSquare, label: "Seller inquiries", text: "A warm welcome starts here" }, { icon: Clock3, label: "Follow-up reminders", text: "Keep the next step in sight" }, { icon: CalendarCheck, label: "Consultations", text: "Record each one and its outcome" }].map(({ icon: Icon, label, text }) => <div key={label}><Icon aria-hidden size={19} /><strong>{label}</strong><span>{text}</span></div>)}
             </div>
             <LeadListPreview />
           </div>

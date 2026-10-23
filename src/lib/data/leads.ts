@@ -1,6 +1,7 @@
 import type { Tx } from "@/lib/db/types";
 import type { AppointmentStatus, ContactMethod, EmailKind, EmailStatus, LeadStatus, Timeline } from "@/lib/domain";
 import { type ActivityEvent, listContactActivity, logAgentEvent } from "./activity";
+import type { TaskKind } from "@/lib/follow-up-plans";
 
 export const LEADS_PAGE_SIZE = 25;
 
@@ -64,7 +65,7 @@ export async function listLeads(
        join public.campaigns cp on cp.id = li.campaign_id
        left join lateral (
          select min(t.due_at) as next_due from public.follow_up_tasks t
-         where t.contact_id = c.id and t.completed_at is null
+         where t.contact_id = c.id and t.completed_at is null and t.canceled_at is null
        ) nt on true
        where c.agent_id = $1::uuid
          and ($2::text is null or c.status = $2::text)
@@ -121,6 +122,7 @@ export interface Contact {
   last_inquiry_at: Date;
   inquiry_count: number;
   last_contacted_at: Date | null;
+  unsubscribed_at: Date | null;
 }
 
 export interface InquiryRecord {
@@ -173,6 +175,14 @@ export interface TaskRecord {
   due_at: Date;
   completed_at: Date | null;
   created_at: Date;
+  kind: TaskKind;
+  enrollment_id: string | null;
+  email_subject: string | null;
+  email_body: string | null;
+  email_id: string | null;
+  text_message: string | null;
+  canceled_at: Date | null;
+  cancel_reason: string | null;
 }
 
 export interface NoteRecord {
@@ -205,11 +215,11 @@ export interface LeadDetail {
   bookingClicks: number;
 }
 
-export async function getContact(tx: Tx, agentId: string, contactId: string): Promise<Contact | null> {
+export async function getContact(tx: Tx, agentId: string, contactId: string, lock = false): Promise<Contact | null> {
   const rows = await tx.query<Contact>(
     `select id, full_name, email, phone, preferred_contact, status, outcome_note, outcome_at, marketing_consent,
-            first_inquiry_at, last_inquiry_at, inquiry_count, last_contacted_at
-     from public.contacts where id = $1::uuid and agent_id = $2::uuid`,
+            first_inquiry_at, last_inquiry_at, inquiry_count, last_contacted_at, unsubscribed_at
+     from public.contacts where id = $1::uuid and agent_id = $2::uuid ${lock ? "for update" : ""}`,
     [contactId, agentId],
   );
   return rows[0] ?? null;
@@ -254,7 +264,8 @@ export async function getLeadDetail(tx: Tx, agentId: string, contactId: string):
       params,
     ),
     tx.query<TaskRecord>(
-      `select id, title, due_at, completed_at, created_at
+      `select id, title, due_at, completed_at, created_at, kind, enrollment_id,
+              email_subject, email_body, email_id, text_message, canceled_at, cancel_reason
        from public.follow_up_tasks where contact_id = $1::uuid and agent_id = $2::uuid
        order by (completed_at is not null), coalesce(completed_at, due_at) desc`,
       params,

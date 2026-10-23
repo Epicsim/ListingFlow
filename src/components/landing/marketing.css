@@ -278,12 +278,13 @@
 .lfm-pricingCard .lfm-previewBadge, .lfm-pricingCard .lfm-pricingCardNote { background: var(--marketing-green-soft); color: var(--marketing-green); }
 .lfm-pricingCardTop { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-bottom: 26px; }
 .lfm-pricingCard h3 { font-size: 14px; font-weight: 550; color: var(--color-ink-soft); }
-.lfm-pricePlaceholder { font-size: 39px; letter-spacing: -.045em; line-height: 1.25; font-weight: 550; margin-top: 10px; }
+.lfm-pricePlaceholder { font-size: clamp(28px, 3vw, 39px); letter-spacing: -.045em; line-height: 1.25; font-weight: 550; margin-top: 10px; }
 .lfm-pricePlaceholder > span { display: block; margin-top: 12px; font-size: 12px; line-height: 1.6; font-weight: 400; letter-spacing: 0; color: var(--color-ink-muted); }
 .lfm-pricingCard ul { display: grid; gap: 15px; padding: 26px 0; margin: 26px 0 0; list-style: none; border-top: 1px solid var(--color-line); }
 .lfm-pricingCard li { display: flex; align-items: flex-start; gap: 11px; font-size: 13px; color: var(--color-ink-soft); }
 .lfm-pricingCard li > svg { color: var(--color-accent-ink); margin-top: 2px; }
 .lfm-pricingCardNote { background: var(--color-canvas); padding: 13px 15px; border-radius: 8px; color: var(--color-ink-muted); font-size: 10px; line-height: 1.8; }
+.lfm-pricingCardNote a { text-decoration: underline; text-underline-offset: 3px; }
 .lfm-faqSection { background: var(--marketing-warm); border-block: 1px solid var(--marketing-peach-border); }
 .lfm-faqLayout { display: grid; grid-template-columns: .85fr 1.15fr; gap: 85px; align-items: start; }
 .lfm-faqIntro { margin-top: 22px !important; color: var(--color-ink-muted); font-size: 14px; line-height: 1.8; }

@@ -7,7 +7,7 @@ import { ShareLinks } from "@/components/share-links";
 import { CampaignStatusBadge } from "@/components/status-badges";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader, Notice, PageHeader } from "@/components/ui/display";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import { getCampaign, listCampaignsWithStats } from "@/lib/data/campaigns";
 import { asUser } from "@/lib/db";
 import type { CampaignStatus } from "@/lib/domain";
@@ -46,7 +46,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps<"
   const { id } = await params;
   const query = await searchParams;
   if (!uuidSchema.safeParse(id).success) notFound();
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const [campaign, stats, origin] = await Promise.all([
     asUser(profile.id, (tx) => getCampaign(tx, profile.id, id)),
     asUser(profile.id, (tx) => listCampaignsWithStats(tx, profile.id)),

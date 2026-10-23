@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { clientIp, rateLimitKey } from "@/lib/security/client-ip";
 import { checkFormToken, idempotencyKey, issueFormToken, MAX_AGE_MS, MIN_FILL_MS } from "@/lib/security/form-token";
 import { signToken, verifyToken } from "@/lib/security/signing";
+import { readUnsubscribeToken, unsubscribeUrl } from "@/lib/email/unsubscribe";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { sniffImageType } from "@/lib/images";
 import { safeNextPath } from "@/lib/request-origin";
@@ -20,6 +21,18 @@ describe("signed tokens", () => {
     expect(verifyToken(`${forged}.${mac}`, SECRET, "session")).toBeNull();
     expect(verifyToken(`${body}.`, SECRET, "session")).toBeNull();
     expect(verifyToken("garbage", SECRET, "session")).toBeNull();
+  });
+});
+
+describe("unsubscribe links", () => {
+  it("identify only the contact they were issued for", () => {
+    const url = new URL(unsubscribeUrl("https://app.example.test", CAMPAIGN, SECRET));
+    const token = url.searchParams.get("t");
+    expect(url.pathname).toBe("/unsubscribe");
+    expect(readUnsubscribeToken(token, SECRET)).toBe(CAMPAIGN);
+    expect(readUnsubscribeToken(token, `${SECRET}x`)).toBeNull();
+    expect(readUnsubscribeToken(signToken({ c: CAMPAIGN }, SECRET, "session"), SECRET)).toBeNull();
+    expect(readUnsubscribeToken(signToken({ c: "not-a-uuid" }, SECRET, "unsubscribe"), SECRET)).toBeNull();
   });
 });
 

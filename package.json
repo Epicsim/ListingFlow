@@ -12,6 +12,9 @@
     "test:watch": "vitest",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed-demo": "tsx scripts/seed-demo.ts",
+    "digest:run": "tsx scripts/run-digest.ts",
+    "billing:setup": "tsx scripts/setup-billing.ts",
+    "billing:listen": "tsx scripts/listen-billing.ts",
     "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
@@ -24,6 +27,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
+    "stripe": "23.0.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

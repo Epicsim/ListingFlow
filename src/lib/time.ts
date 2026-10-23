@@ -130,6 +130,30 @@ export function formatTime(value: Date | string, timeZone: string): string {
   return new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit" }).format(toDate(value));
 }
 
+/** "Today", "Yesterday" or a short date such as "Mon, Oct 19" (with the year when it isn't this year). */
+export function formatDayLabel(value: Date | string, timeZone: string, now: Date): string {
+  const date = zonedDate(toDate(value), timeZone);
+  const today = zonedDate(now, timeZone);
+  if (date === today) return "Today";
+  if (date === addDays(today, -1)) return "Yesterday";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    ...(date.slice(0, 4) === today.slice(0, 4) ? {} : { year: "numeric" }),
+  }).format(toDate(value));
+}
+
+/** Weekday, month and day for a calendar tile, e.g. { weekday: "Fri", month: "Oct", day: "23" }. */
+export function calendarTile(value: Date | string, timeZone: string): { weekday: string; month: string; day: string } {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", month: "short", day: "numeric" }).formatToParts(
+    toDate(value),
+  );
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
+  return { weekday: get("weekday"), month: get("month"), day: get("day") };
+}
+
 export function timeZoneLabel(timeZone: string, at: Date = new Date()): string {
   const name = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "short" })
     .formatToParts(at)

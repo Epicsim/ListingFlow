@@ -68,6 +68,12 @@ export function LandingFooter({ data }: { data: LandingData }) {
           <a href={privacyHref(data)} className="underline-offset-4 hover:text-ink hover:underline">
             Privacy
           </a>
+          <a
+            href={`mailto:${data.contact_email}?subject=${encodeURIComponent("Please delete my data")}`}
+            className="underline-offset-4 hover:text-ink hover:underline"
+          >
+            Delete my data
+          </a>
           <span className="inline-flex items-center gap-2">Page by <BrandMark compact /></span>
         </nav>
       </div>
@@ -98,6 +104,9 @@ export function LandingPage({ data, mode, form, banner }: Props) {
 
   return (
     <div className="brand-scope min-h-screen bg-[#faf8f4]" style={brandStyle(data.primary_color)}>
+      <a href="#request" className="sr-only z-50 rounded-md bg-white px-3 py-2 focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
+        Skip to the request form
+      </a>
       {banner}
       <AgentHeader data={data} />
 

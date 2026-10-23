@@ -31,7 +31,7 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   contacted: "Contacted",
   consultation_booked: "Consultation booked",
   nurturing: "Nurturing",
-  won: "Won",
+  won: "Won – listing signed",
   lost: "Lost",
 };
 
@@ -63,6 +63,7 @@ export const EMAIL_STATUS_LABELS: Record<EmailStatus, string> = {
 };
 
 export const EMAIL_KIND_LABELS = {
+  agent_digest: "Daily digest to you",
   agent_notification: "New-inquiry alert to you",
   acknowledgment: "Acknowledgment to homeowner",
   follow_up: "Follow-up to homeowner",

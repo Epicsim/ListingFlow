@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { type ActionState, failure, success } from "@/lib/action-state";
-import { requireAgent } from "@/lib/auth/session";
+import { requireWorkspaceAgent } from "@/lib/auth/session";
 import {
   createCampaign,
   getCampaign,
@@ -28,7 +28,7 @@ async function parseCampaignForm(formData: FormData) {
 }
 
 export async function createCampaignAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const { parsed, fieldErrors, hero } = await parseCampaignForm(formData);
   if (!parsed.success || Object.keys(fieldErrors).length) {
     return failure("Please fix the highlighted fields.", fieldErrors);
@@ -54,7 +54,7 @@ export async function createCampaignAction(_: ActionState, formData: FormData): 
 }
 
 export async function updateCampaignAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const id = uuidSchema.safeParse(formData.get("campaign_id"));
   if (!id.success) return failure("This campaign could not be found.");
   const { parsed, fieldErrors, hero, removeHero } = await parseCampaignForm(formData);
@@ -86,7 +86,7 @@ export async function updateCampaignAction(_: ActionState, formData: FormData): 
 }
 
 export async function setCampaignStatusAction(formData: FormData): Promise<void> {
-  const { profile } = await requireAgent();
+  const { profile } = await requireWorkspaceAgent();
   const id = uuidSchema.safeParse(formData.get("campaign_id"));
   const status = formData.get("status") as CampaignStatus;
   if (!id.success || !CAMPAIGN_STATUSES.includes(status)) return;

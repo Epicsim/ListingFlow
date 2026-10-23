@@ -178,6 +178,7 @@ export function FollowUpComposer({
   body: initialBody,
   live,
   deliveryExplanation,
+  taskId,
 }: {
   contactId: string;
   to: string;
@@ -185,6 +186,7 @@ export function FollowUpComposer({
   body: string;
   live: boolean;
   deliveryExplanation: string;
+  taskId?: string;
 }) {
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(initialBody);
@@ -192,12 +194,15 @@ export function FollowUpComposer({
   return (
     <ActionForm action={saveFollowUpEmailAction} className="space-y-3">
       <input type="hidden" name="contact_id" value={contactId} />
+      {taskId ? <input type="hidden" name="task_id" value={taskId} /> : null}
       <p className="text-sm text-ink-muted">
         To <span className="font-medium text-ink">{to}</span>
       </p>
       <TextField name="subject" label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={300} />
-      <TextArea name="body" label="Message" rows={9} value={body} onChange={(e) => setBody(e.target.value)} maxLength={10000} />
-      <p className="text-[13px] text-ink-muted">{deliveryExplanation}</p>
+      <TextArea name="body" label="Message" rows={9} value={body} onChange={(e) => setBody(e.target.value)} maxLength={9000} />
+      <p className="text-[13px] text-ink-muted">
+        {deliveryExplanation} An unsubscribe link is added to the end of the message.
+      </p>
       <div className="flex flex-wrap items-center gap-2">
         <SubmitButton size="sm" pendingLabel={live ? "Sending…" : "Saving…"}>
           {live ? "Send email" : "Save to outbox (preview – not sent)"}

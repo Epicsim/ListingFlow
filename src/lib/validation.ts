@@ -319,7 +319,8 @@ export const followUpEmailSchema = z.object({
   body: z
     .string()
     .transform(cleanMultiline)
-    .pipe(z.string().min(1, { error: "Write the message first." }).max(10000)),
+    // Leaves room for the unsubscribe footer within the outbox's 10,000-character limit.
+    .pipe(z.string().min(1, { error: "Write the message first." }).max(9000)),
 });
 
 /* ----------------------------------------------------------------------------

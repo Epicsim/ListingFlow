@@ -30,6 +30,8 @@ async function main() {
   const { createCampaign, setCampaignStatus } = await import("@/lib/data/campaigns");
   const { recordBookingClick } = await import("@/lib/data/public");
   const { markContacted, updateLeadStatus, addNote } = await import("@/lib/data/leads");
+  const { savePlan, savePlanStep, startPlan } = await import("@/lib/data/plans");
+  const { STARTER_PLANS } = await import("@/lib/follow-up-plans");
   const { createTask } = await import("@/lib/data/tasks");
   const { recordAppointment, updateAppointmentStatus } = await import("@/lib/data/appointments");
   const { processInquirySubmission } = await import("@/lib/inquiry-service");
@@ -198,6 +200,10 @@ async function main() {
       // Taylor: decided not to sell.
       await markContacted(tx, agentId, c["taylor.brooks@example.com"]);
       await updateLeadStatus(tx, agentId, c["taylor.brooks@example.com"], "lost", "Decided to rent the home out instead.");
+      // A fictional plan is off for automatic starts, but manually enrolled for Casey.
+      const demoPlan = await savePlan(tx, agentId, { name: "Fictional demo follow-up", is_active: false, timelines: ["6_12_months"], campaign_id: null });
+      for (const step of STARTER_PLANS[2].steps) await savePlanStep(tx, agentId, demoPlan, step);
+      await startPlan(tx, agentId, c["casey.nguyen@example.com"], demoPlan);
       // Drew: contacted a while ago.
       await markContacted(tx, agentId, c["drew.kim@example.com"]);
     });

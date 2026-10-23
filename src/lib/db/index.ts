@@ -41,7 +41,9 @@ export async function asAnon<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
 /**
  * Runs with the service role, which bypasses row-level security. Use only for
  * the server-side steps that have no signed-in agent: recording a validated
- * public submission, tracking a booking click and updating email delivery.
+ * public submission, tracking a booking click, processing a verified
+ * unsubscribe link, starting a matching plan after a public submission,
+ * updating email delivery and preparing the agent-only daily digest.
  */
 export async function asService<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
   return runAs(await getDriver(), "service_role", null, fn);

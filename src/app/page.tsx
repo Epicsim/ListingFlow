@@ -6,7 +6,9 @@ import { LandingReveal } from "@/components/landing-reveal";
 import { MarketingDemo } from "@/components/landing/marketing-demo";
 import { MarketingNav } from "@/components/landing/marketing-nav";
 import { MarketingWorkspace, SellerPagePreview, FollowUpPreview } from "@/components/landing/marketing-previews";
-import { brand } from "@/config/brand";
+import { brand, LEGAL_LINKS } from "@/config/brand";
+import { MONTHLY_PLAN } from "@/config/billing";
+import { BusinessDetails } from "@/components/legal-footer";
 import "@/components/landing/marketing.css";
 
 export const viewport: Viewport = { themeColor: "#f5f7fb", colorScheme: "light" };
@@ -26,7 +28,7 @@ const FAQS = [
   { question: "Can I use my own branding?", answer: "Yes. Add your logo, headshot, brand color, introduction, and service areas. You can also edit the headline, description, and call to action on your seller pages." },
   { question: "Can I keep using my existing booking tool?", answer: `Yes. Add your existing scheduling link so homeowners can open it after submitting an inquiry. You record consultations and their outcomes in ${brand.name}. Opening a booking link is tracked separately from a confirmed consultation.` },
   { question: "How does email follow-up work?", answer: "You can write individual follow-ups and use editable email templates. Sending requires email delivery to be configured; otherwise messages remain clearly labeled as previews. Automated marketing sequences aren’t included." },
-  { question: "How much does it cost?", answer: "Plans and pricing are being finalized. We’ll share the available plans, what’s included, and billing details here when they’re ready." },
+  { question: "How much does it cost?", answer: `${MONTHLY_PLAN.label}, billed in US dollars. Subscribe through secure Stripe checkout in Settings → Billing. Your subscription renews monthly until you cancel through Manage billing. Nothing is charged until you choose to subscribe.` },
 ];
 
 export default function Home() {
@@ -83,8 +85,8 @@ export default function Home() {
 
         <div className="lfm-pricingBackdrop">
         <section id="pricing" className={`lfm-container lfm-section lfm-pricingSection`} aria-labelledby="pricing-heading">
-          <LandingReveal className="lfm-pricingCopy"><span className="lfm-eyebrow">ROOM FOR YOUR NEXT CHAPTER</span><h2 id="pricing-heading">Good things<br />are taking shape.</h2><p>We’re shaping straightforward plans around the way independent agents work. Explore the workspace while we finalize the details.</p><span className="lfm-pricingNotice"><Clock3 aria-hidden size={16} /> Plans and pricing to be announced</span><a href="#demo" className="lfm-textLink">Explore what’s inside <ArrowRight aria-hidden size={17} /></a></LandingReveal>
-          <LandingReveal delay={100} className="lfm-pricingCard"><div className="lfm-pricingCardTop"><BrandMark compact /><span className="lfm-previewBadge">Pricing preview</span></div><h3>Your seller workspace</h3><div className="lfm-pricePlaceholder">Coming soon<span>Plans and billing details will appear here.</span></div><ul>{["Branded seller pages", "Organized inquiries and lead statuses", "Notes and follow-up reminders", "Campaign source tracking", "Your booking link and consultation records", "Editable email templates"].map((feature) => <li key={feature}><Check aria-hidden size={17} />{feature}</li>)}</ul><p className="lfm-pricingCardNote">Plans and pricing are being finalized. Check back for the details.</p></LandingReveal>
+          <LandingReveal className="lfm-pricingCopy"><span className="lfm-eyebrow">ROOM FOR YOUR NEXT CHAPTER</span><h2 id="pricing-heading">One workspace.<br />One simple plan.</h2><p>Give every seller conversation a thoughtful next step, with the tools you need in one place.</p><span className="lfm-pricingNotice"><Check aria-hidden size={16} /> Billed monthly. Cancel through your billing portal.</span><a href="#demo" className="lfm-textLink">Explore what’s inside <ArrowRight aria-hidden size={17} /></a></LandingReveal>
+          <LandingReveal delay={100} className="lfm-pricingCard"><div className="lfm-pricingCardTop"><BrandMark compact /><span className="lfm-previewBadge">Monthly plan</span></div><h3>Your seller workspace</h3><div className="lfm-pricePlaceholder">{MONTHLY_PLAN.label}<span>Billed in US dollars. Renews monthly until canceled.</span></div><ul>{["Branded seller pages", "Organized inquiries and lead statuses", "Notes and follow-up reminders", "Campaign source tracking", "Your booking link and consultation records", "Editable email templates"].map((feature) => <li key={feature}><Check aria-hidden size={17} />{feature}</li>)}</ul><Link href="/settings/billing" className="lfm-button">Choose monthly <ArrowRight aria-hidden size={17} /></Link><p className="lfm-pricingCardNote">Secure checkout with Stripe. Subscribe in Settings → Billing after creating your account. <Link href="/refunds">Refund Policy</Link></p></LandingReveal>
         </section>
         </div>
 
@@ -95,7 +97,7 @@ export default function Home() {
 
         <section className={`lfm-container lfm-finalSection`} aria-labelledby="final-heading"><LandingReveal className="lfm-finalCta"><span className="lfm-finalDecoration" aria-hidden><House size={200} strokeWidth={0.7} /></span><span className="lfm-eyebrow">YOUR RELATIONSHIPS. YOUR NEXT CHAPTER.</span><h2 id="final-heading">A better first hello.<br />A clearer next move.</h2><p>Give your next seller conversation a place to begin.</p><Link href="/signup" className={`lfm-button lfm-buttonWhite`}>Create your seller page <ArrowRight aria-hidden size={18} /></Link></LandingReveal></section>
       </main>
-      <footer className="lfm-footer"><div className={`lfm-container lfm-footerTop`}><div><BrandMark /><p>A little more flow.<br />From first hello to what’s next.</p></div><nav aria-label="Footer"><a href="#why">Why {brand.name}</a><a href="#how">How it works</a><a href="#demo">Explore the demo</a><a href="#pricing">Pricing</a><Link href="/privacy">Privacy</Link></nav><Link href="/signup" className="lfm-textLink">Make your next move <ArrowUpRight aria-hidden size={17} /></Link></div><div className={`lfm-container lfm-footerBottom`}><span>© {new Date().getFullYear()} {brand.name}</span><span>Built for the people behind the listings.</span></div></footer>
+      <footer className="lfm-footer"><div className={`lfm-container lfm-footerTop`}><div><BrandMark /><p>A little more flow.<br />From first hello to what’s next.</p></div><nav aria-label="Footer"><a href="#why">Why {brand.name}</a><a href="#how">How it works</a><a href="#demo">Explore the demo</a><a href="#pricing">Pricing</a>{LEGAL_LINKS.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}</nav><Link href="/signup" className="lfm-textLink">Make your next move <ArrowUpRight aria-hidden size={17} /></Link></div><div className={`lfm-container lfm-footerBottom`}><BusinessDetails /><span>Built for the people behind the listings.</span></div></footer>
     </div>
   );
 }

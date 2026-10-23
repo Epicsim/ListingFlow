@@ -3,7 +3,7 @@ import { contrastRatio, readableOn, brandTextColor } from "@/lib/color";
 import { resolveRange } from "@/lib/date-range";
 import { renderTemplate } from "@/lib/email/templates";
 import { slugify } from "@/lib/slug";
-import { addDays, formatDateTime, zonedDate, zonedDateTimeToUtc, zonedTime } from "@/lib/time";
+import { addDays, calendarTile, formatDateTime, formatDayLabel, zonedDate, zonedDateTimeToUtc, zonedTime } from "@/lib/time";
 import { buildCampaignUrl, normalizeSource, readUtm, sourceLabel } from "@/lib/utm";
 
 describe("time zones", () => {
@@ -27,6 +27,17 @@ describe("time zones", () => {
   it("formats in the agent's time zone", () => {
     expect(formatDateTime("2026-10-21T21:30:00Z", "America/Los_Angeles")).toBe("Oct 21, 2026, 2:30 PM PDT");
     expect(formatDateTime("2026-10-21T21:30:00Z", "America/New_York")).toBe("Oct 21, 2026, 5:30 PM EDT");
+  });
+
+  it("labels activity days and calendar tiles by the agent's calendar, not UTC", () => {
+    const now = new Date("2026-10-22T03:00:00Z"); // Oct 21, 8 PM in Los Angeles; already Oct 22 in UTC
+    const la = "America/Los_Angeles";
+    expect(formatDayLabel("2026-10-21T15:00:00Z", la, now)).toBe("Today");
+    expect(formatDayLabel("2026-10-21T05:00:00Z", la, now)).toBe("Yesterday"); // Oct 20, 10 PM local
+    expect(formatDayLabel("2026-10-19T18:00:00Z", la, now)).toBe("Mon, Oct 19");
+    expect(formatDayLabel("2025-12-30T18:00:00Z", la, now)).toBe("Tue, Dec 30, 2025");
+    expect(formatDayLabel("2026-10-21T14:00:00Z", "Asia/Tokyo", now)).toBe("Yesterday"); // Oct 21, 11 PM in Tokyo
+    expect(calendarTile("2026-10-24T04:30:00Z", la)).toEqual({ weekday: "Fri", month: "Oct", day: "23" });
   });
 
   it("adds calendar days across month and year ends", () => {

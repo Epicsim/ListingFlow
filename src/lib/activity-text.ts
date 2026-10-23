@@ -9,6 +9,7 @@ import {
 } from "@/lib/domain";
 import { formatDateTime } from "@/lib/time";
 import { sourceLabel } from "@/lib/utm";
+import { STOP_REASON_LABELS } from "@/lib/follow-up-plans";
 
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 
@@ -18,6 +19,10 @@ export function describeEvent(event: ActivityEvent, timeZone: string, includeNam
   const who = includeName && event.contact_name ? event.contact_name : "";
   const subject = who || "Homeowner";
   switch (event.type) {
+    case "plan_started":
+      return `Plan “${str(d.plan_name)}” started${who ? ` for ${who}` : ""}`;
+    case "plan_stopped":
+      return `Plan stopped${who ? ` for ${who}` : ""}: ${STOP_REASON_LABELS[str(d.reason)] ?? str(d.reason)}`;
     case "lead_deleted":
       return "Lead permanently deleted";
     case "inquiry_submitted": {
@@ -28,6 +33,8 @@ export function describeEvent(event: ActivityEvent, timeZone: string, includeNam
     }
     case "repeat_inquiry_submitted":
       return `${subject} sent another request via “${str(d.campaign_name)}”${d.source ? ` (${sourceLabel(str(d.source))})` : ""}`;
+    case "email_unsubscribed":
+      return `${subject} unsubscribed from your emails`;
     case "booking_link_clicked":
       return `${subject} opened your booking link (not a confirmed appointment)`;
     case "status_changed":
